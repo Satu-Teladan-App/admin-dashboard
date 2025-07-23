@@ -77,7 +77,9 @@ export function AppSidebar() {
             className="rounded-full"
           />
           <span className="font-semibold text-gray-900">
-            Satu Teladan Admin Dashboard
+            Satu Teladan
+            <br />
+            Admin Dashboard
           </span>
         </div>
       </SidebarHeader>
