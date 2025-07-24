@@ -10,7 +10,7 @@ export default function BeritaPage() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Berita</h1>
         <p className="text-gray-600">
-          Kelola artikel berita dan publikasi konten
+          Kelola artikel berita dan publikasi konten hahahaha
         </p>
       </div>
 
