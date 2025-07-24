@@ -38,6 +38,16 @@ const items = [
     icon: User,
   },
   {
+    title: "Pesan",
+    url: "/pesan",
+    icon: MessageCircle,
+  },
+  {
+    title: "Berita",
+    url: "/berita",
+    icon: Newspaper,
+  },
+  {
     title: "Komunitas",
     url: "/komunitas",
     icon: Users,
@@ -47,20 +57,11 @@ const items = [
     url: "/kegiatan",
     icon: Calendar,
   },
-  {
-    title: "Berita",
-    url: "/berita",
-    icon: Newspaper,
-  },
+
   {
     title: "Pendanaan",
     url: "/pendanaan",
     icon: Wallet,
-  },
-  {
-    title: "Pesan",
-    url: "/pesan",
-    icon: MessageCircle,
   },
 ];
 

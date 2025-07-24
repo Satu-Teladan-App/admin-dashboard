@@ -1,15 +1,14 @@
 import { BreadcrumbLine } from "@/src/element/Breadcrumb";
-import { PaginationLine } from "@/src/modules/akun/Pagination";
 import DefaultLayout from "@/src/layout/DefaultLayout";
-import Table from "@/src/modules/akun/Table";
+import { DataTable } from "@/src/modules/akun/DataTable";
+
+import data from "./data";
 
 export default function AkunPage() {
   return (
     <DefaultLayout>
       <BreadcrumbLine legend="Akun" link="akun" />
-
-      <Table />
-      <PaginationLine />
+      <DataTable data={data} />
     </DefaultLayout>
   );
 }

@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/src/layout/Sidebar";
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
             {children}
           </main>
         </SidebarProvider>
+        <Toaster />
       </body>
     </html>
   );
