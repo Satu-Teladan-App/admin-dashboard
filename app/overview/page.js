@@ -2,6 +2,7 @@ import { BreadcrumbLine } from "@/src/element/Breadcrumb";
 import DefaultLayout from "@/src/layout/DefaultLayout";
 import { StatsCards } from "@/src/modules/overview/StatsCard";
 import { ChartAreaInteractive } from "@/src/modules/overview/ChartAreaInteractive";
+import { PendingItems } from "@/src/modules/overview/PendingItems";
 
 export default function OverviewPage() {
   return (
@@ -13,6 +14,7 @@ export default function OverviewPage() {
       </div>
       <StatsCards />
       <ChartAreaInteractive />
+      <PendingItems />
     </DefaultLayout>
   );
 }
