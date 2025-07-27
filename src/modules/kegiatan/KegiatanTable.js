@@ -68,7 +68,7 @@ const komunitasData = [
   },
 ];
 
-export function SlugTable() {
+export function KegiatanTable() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const getStatusBadge = (status) => {
