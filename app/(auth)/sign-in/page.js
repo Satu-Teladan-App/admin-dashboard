@@ -75,7 +75,7 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full space-y-8">
+      <div className="w-full flex flex-col items-center space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <Image
@@ -92,7 +92,7 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <Card>
+        <Card className="min-w-2xl">
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
             <CardDescription>
