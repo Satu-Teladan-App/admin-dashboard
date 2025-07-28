@@ -41,8 +41,8 @@ export function StatsCards() {
         .select("kegiatan_date");
 
       const today = new Date();
-      const upcomingKegiatan = kegiatanData?.filter((k) =>
-        k.kegiatan_date && new Date(k.kegiatan_date) >= today
+      const upcomingKegiatan = kegiatanData?.filter(
+        (k) => k.kegiatan_date && new Date(k.kegiatan_date) >= today
       ).length;
 
       // Fetch donasi stats
@@ -80,10 +80,16 @@ export function StatsCards() {
 
       setStats({
         alumni: { total: alumniTotal || 0, verified: alumniVerified || 0 },
-        kegiatan: { total: kegiatanTotal || 0, upcoming: upcomingKegiatan || 0 },
+        kegiatan: {
+          total: kegiatanTotal || 0,
+          upcoming: upcomingKegiatan || 0,
+        },
         donasi: { total: donasiTotal || 0, totalAmount: totalDonasiAmount },
         berita: { total: beritaTotal || 0, thisMonth: beritaThisMonth || 0 },
-        komunitas: { total: komunitasTotal || 0, verified: komunitasVerified || 0 },
+        komunitas: {
+          total: komunitasTotal || 0,
+          verified: komunitasVerified || 0,
+        },
       });
     } catch (error) {
       console.error("Error fetching overview stats:", error);

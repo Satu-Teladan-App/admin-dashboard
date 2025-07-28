@@ -56,36 +56,41 @@ export function ChartAreaInteractive() {
 
       for (let i = 5; i >= 0; i--) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const nextMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - i + 1,
+          1
+        );
 
         const monthName = date.toLocaleDateString("id-ID", { month: "short" });
 
         // Fetch counts for each category for this month
-        const [alumniCount, kegiatanCount, donasiCount, beritaCount] = await Promise.all([
-          supabase
-            .from("alumni")
-            .select("*", { count: "exact", head: true })
-            .gte("created_at", date.toISOString())
-            .lt("created_at", nextMonth.toISOString()),
+        const [alumniCount, kegiatanCount, donasiCount, beritaCount] =
+          await Promise.all([
+            supabase
+              .from("alumni")
+              .select("*", { count: "exact", head: true })
+              .gte("created_at", date.toISOString())
+              .lt("created_at", nextMonth.toISOString()),
 
-          supabase
-            .from("kegiatan")
-            .select("*", { count: "exact", head: true })
-            .gte("created_at", date.toISOString())
-            .lt("created_at", nextMonth.toISOString()),
+            supabase
+              .from("kegiatan")
+              .select("*", { count: "exact", head: true })
+              .gte("created_at", date.toISOString())
+              .lt("created_at", nextMonth.toISOString()),
 
-          supabase
-            .from("donasi")
-            .select("*", { count: "exact", head: true })
-            .gte("created_at", date.toISOString())
-            .lt("created_at", nextMonth.toISOString()),
+            supabase
+              .from("donasi")
+              .select("*", { count: "exact", head: true })
+              .gte("created_at", date.toISOString())
+              .lt("created_at", nextMonth.toISOString()),
 
-          supabase
-            .from("berita")
-            .select("*", { count: "exact", head: true })
-            .gte("created_at", date.toISOString())
-            .lt("created_at", nextMonth.toISOString()),
-        ]);
+            supabase
+              .from("berita")
+              .select("*", { count: "exact", head: true })
+              .gte("created_at", date.toISOString())
+              .lt("created_at", nextMonth.toISOString()),
+          ]);
 
         months.push({
           date: monthName,
@@ -214,8 +219,7 @@ export function ChartAreaInteractive() {
         <div className="flex w-full items-start gap-2 text-sm">
           <div className="grid gap-2">
             <div className="flex items-center gap-2 font-medium leading-none">
-              Activity trends over time{" "}
-              <TrendingUp className="h-4 w-4" />
+              Activity trends over time <TrendingUp className="h-4 w-4" />
             </div>
             <div className="flex items-center gap-2 leading-none text-muted-foreground">
               Last 6 months data from your database

@@ -38,49 +38,57 @@ export function PendingItems() {
       // Fetch unverified alumni
       const { data: pendingAlumni } = await supabase
         .from("alumni")
-        .select(`
+        .select(
+          `
           id,
           name,
           full_name,
           created_at,
           alumni_verification (id)
-        `)
+        `
+        )
         .is("alumni_verification.id", null)
         .limit(5);
 
       // Fetch unverified komunitas
       const { data: pendingKomunitas } = await supabase
         .from("komunitas")
-        .select(`
+        .select(
+          `
           id,
           name,
           created_at,
           komunitas_verification (id)
-        `)
+        `
+        )
         .is("komunitas_verification.id", null)
         .limit(5);
 
       // Fetch unverified kegiatan
       const { data: pendingKegiatan } = await supabase
         .from("kegiatan")
-        .select(`
+        .select(
+          `
           id,
           name,
           created_at,
           kegiatan_verification (id)
-        `)
+        `
+        )
         .is("kegiatan_verification.id", null)
         .limit(5);
 
       // Fetch unverified donasi
       const { data: pendingDonasi } = await supabase
         .from("donasi")
-        .select(`
+        .select(
+          `
           id,
           event_name,
           created_at,
           donasi_verification (id)
-        `)
+        `
+        )
         .is("donasi_verification.id", null)
         .limit(5);
 
