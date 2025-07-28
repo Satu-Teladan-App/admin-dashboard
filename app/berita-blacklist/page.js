@@ -56,11 +56,11 @@ export default function BeritaBlacklistPage() {
         }
 
         // Try to get verificator info by matching verificator_id
-        if (item.verficator_id) {
+        if (item.verificator_id) {
           const { data: verificatorData } = await supabase
             .from("alumni")
             .select("name, full_name")
-            .eq("user_id", item.verficator_id)
+            .eq("user_id", item.verificator_id)
             .single();
 
           verificatorInfo = verificatorData;
