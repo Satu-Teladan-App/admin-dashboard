@@ -21,10 +21,16 @@ export default function DefaultLayout({ className, children, ...props }) {
 
         if (user) {
           // Check if user has admin role
-          const { data: adminRoles } = await supabase
-            .from("admin_roles")
-            .select("*")
-            .eq("user_id", user.id);
+          let adminRoles = null;
+          try {
+            const { data } = await supabase
+              .from("admin_roles")
+              .select("*")
+              .eq("user_id", user.id);
+            adminRoles = data;
+          } catch (queryError) {
+            console.error("Admin role query error:", queryError);
+          }
 
           setIsAuthenticated(adminRoles && adminRoles.length > 0);
         } else {
