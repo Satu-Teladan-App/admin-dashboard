@@ -156,8 +156,8 @@ export default function SignInPage() {
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            This is an admin-only portal. If you don't have admin access, please
-            contact your system administrator.
+            This is an admin-only portal. If you don&apos;t have admin access,
+            please contact your system administrator.
           </p>
         </div>
       </div>
