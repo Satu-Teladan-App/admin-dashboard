@@ -7,10 +7,18 @@ export default function Page() {
   return (
     <DefaultLayout>
       <BreadcrumbLine legend={"Komunitas"} link={"komunitas"} />
-      <h1>Halaman Komunitas</h1>
-      <p>Ini adalah halaman untuk komunitas.</p>
-      <KomunitasStats />
-      <KomunitasTable />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Komunitas Management
+          </h1>
+          <p className="text-gray-600">
+            Kelola komunitas alumni dan verifikasi status keanggotaan
+          </p>
+        </div>
+        <KomunitasStats />
+        <KomunitasTable />
+      </div>
     </DefaultLayout>
   );
 }

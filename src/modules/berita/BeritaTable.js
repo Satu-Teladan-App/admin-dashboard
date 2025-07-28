@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -14,6 +14,7 @@ import {
   Users,
   Clock,
   CheckCircle,
+  Shield,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,131 +50,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const beritaData = [
-  {
-    id: 1,
-    judul: "Komunitas Pemuda Kreatif Gelar Workshop Digital Marketing",
-    penulis: "Admin Redaksi",
-    kategori: "Komunitas",
-    tanggalPublish: "25/04/24",
-    status: "Dipublikasi",
-    views: "1,245",
-    gambar: "/placeholder.svg?height=60&width=80&text=News1",
-    ringkasan:
-      "Workshop digital marketing yang diselenggarakan oleh Komunitas Pemuda Kreatif berhasil menarik 150 peserta dari berbagai kalangan...",
-    tags: ["Workshop", "Digital Marketing", "Pemuda"],
-  },
-  {
-    id: 2,
-    judul: "Program Donasi Pendidikan Capai Target 100 Juta Rupiah",
-    penulis: "Sarah Wijaya",
-    kategori: "Donasi",
-    tanggalPublish: "24/04/24",
-    status: "Dipublikasi",
-    views: "2,156",
-    gambar: "/placeholder.svg?height=60&width=80&text=News2",
-    ringkasan:
-      "Program donasi untuk pendidikan anak kurang mampu berhasil mencapai target pengumpulan dana sebesar 100 juta rupiah...",
-    tags: ["Donasi", "Pendidikan", "Sosial"],
-  },
-  {
-    id: 3,
-    judul: "Kegiatan Bakti Sosial Pembersihan Pantai Diikuti 200 Relawan",
-    penulis: "Budi Santoso",
-    kategori: "Kegiatan",
-    tanggalPublish: "23/04/24",
-    status: "Review",
-    views: "0",
-    gambar: "/placeholder.svg?height=60&width=80&text=News3",
-    ringkasan:
-      "Kegiatan bakti sosial pembersihan pantai yang diinisiasi oleh komunitas lingkungan berhasil mengumpulkan 200 relawan...",
-    tags: ["Bakti Sosial", "Lingkungan", "Relawan"],
-  },
-  {
-    id: 4,
-    judul: "Peluncuran Fitur Baru: Sistem Verifikasi Otomatis",
-    penulis: "Tim Teknis",
-    kategori: "Teknologi",
-    tanggalPublish: "22/04/24",
-    status: "Draft",
-    views: "0",
-    gambar: "/placeholder.svg?height=60&width=80&text=News4",
-    ringkasan:
-      "Sistem verifikasi otomatis yang baru diluncurkan akan mempercepat proses approval untuk berbagai pengajuan...",
-    tags: ["Teknologi", "Fitur Baru", "Sistem"],
-  },
-  {
-    id: 5,
-    judul: "Seminar Kewirausahaan: Membangun Bisnis di Era Digital",
-    penulis: "Maya Sari",
-    kategori: "Edukasi",
-    tanggalPublish: "21/04/24",
-    status: "Dipublikasi",
-    views: "987",
-    gambar: "/placeholder.svg?height=60&width=80&text=News5",
-    ringkasan:
-      "Seminar kewirausahaan yang menghadirkan para pengusaha sukses memberikan insight tentang membangun bisnis digital...",
-    tags: ["Seminar", "Kewirausahaan", "Bisnis"],
-  },
-  {
-    id: 6,
-    judul: "Laporan Tahunan: Pencapaian Platform Tahun 2024",
-    penulis: "Admin Redaksi",
-    kategori: "Laporan",
-    tanggalPublish: "20/04/24",
-    status: "Dipublikasi",
-    views: "3,421",
-    gambar: "/placeholder.svg?height=60&width=80&text=News6",
-    ringkasan:
-      "Laporan tahunan menunjukkan pertumbuhan signifikan dalam jumlah pengguna dan aktivitas platform selama tahun 2024...",
-    tags: ["Laporan", "Tahunan", "Statistik"],
-  },
-];
+import { createClient } from "@/utils/supabase/client";
+import { toast } from "sonner";
 
 export function BeritaTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [beritaData, setBeritaData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [newArticle, setNewArticle] = useState({
-    judul: "",
-    kategori: "",
-    ringkasan: "",
-    konten: "",
-    tags: "",
+    title: "",
+    category: "",
+    link: "",
+    publication_date: "",
   });
+  const supabase = createClient();
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "Dipublikasi":
-        return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Dipublikasi
-          </Badge>
-        );
-      case "Review":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            <Clock className="w-3 h-3 mr-1" />
-            Review
-          </Badge>
-        );
-      case "Draft":
-        return (
-          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">
-            <Edit className="w-3 h-3 mr-1" />
-            Draft
-          </Badge>
-        );
-      case "Ditolak":
-        return (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-            Ditolak
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  useEffect(() => {
+    fetchBerita();
+  }, []);
+
+  const fetchBerita = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("berita")
+        .select(
+          `
+          *,
+          alumni:writer(name, full_name)
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setBeritaData(data || []);
+    } catch (error) {
+      console.error("Error fetching berita:", error);
+      toast.error("Failed to fetch berita data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (item) => {
+    if (item.publication_date) {
+      return (
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Dipublikasi
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+          <Clock className="w-3 h-3 mr-1" />
+          Review
+        </Badge>
+      );
     }
   };
 
@@ -193,30 +127,137 @@ export function BeritaTable() {
           colors[kategori] || "bg-gray-100"
         }`}
       >
-        {kategori}
+        {kategori || "Umum"}
       </Badge>
     );
   };
 
   const filteredData = beritaData.filter(
     (item) =>
-      item.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.penulis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.kategori.toLowerCase().includes(searchTerm.toLowerCase())
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.alumni?.name &&
+        item.alumni.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.category &&
+        item.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleAddArticle = () => {
-    // Handle add article logic here
-    console.log("New article:", newArticle);
-    setNewArticle({
-      judul: "",
-      kategori: "",
-      ringkasan: "",
-      konten: "",
-      tags: "",
-    });
-    setIsAddModalOpen(false);
+  const handleAddArticle = async () => {
+    if (!newArticle.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+
+      const { error } = await supabase.from("berita").insert({
+        title: newArticle.title,
+        category: newArticle.category || null,
+        link: newArticle.link || null,
+        publication_date: newArticle.publication_date || null,
+        auth_uid: user?.user?.id,
+      });
+
+      if (error) throw error;
+
+      toast.success("Article added successfully");
+      setNewArticle({
+        title: "",
+        category: "",
+        link: "",
+        publication_date: "",
+      });
+      setIsAddModalOpen(false);
+      fetchBerita();
+    } catch (error) {
+      console.error("Error adding article:", error);
+      toast.error("Failed to add article");
+    }
   };
+
+  const handlePublishArticle = async (id) => {
+    try {
+      const { error } = await supabase
+        .from("berita")
+        .update({ publication_date: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Article published successfully");
+      fetchBerita();
+    } catch (error) {
+      console.error("Error publishing article:", error);
+      toast.error("Failed to publish article");
+    }
+  };
+
+  const handleDeleteArticle = async (id) => {
+    if (!confirm("Are you sure you want to delete this article?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("berita").delete().eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Article deleted successfully");
+      fetchBerita();
+    } catch (error) {
+      console.error("Error deleting article:", error);
+      toast.error("Failed to delete article");
+    }
+  };
+
+  const handleBlacklistWriter = async (authUid) => {
+    if (!authUid) {
+      toast.error("Cannot blacklist: no user information");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to blacklist this writer?")) {
+      return;
+    }
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+
+      const { error } = await supabase.from("berita_blacklist").insert({
+        user_id: authUid,
+        verificator_id: user?.user?.id,
+      });
+
+      if (error) throw error;
+
+      toast.success("Writer has been blacklisted");
+      fetchBerita();
+    } catch (error) {
+      console.error("Error blacklisting writer:", error);
+      toast.error("Failed to blacklist writer");
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Draft";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      year: "2-digit",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -253,22 +294,22 @@ export function BeritaTable() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="judul">Judul Artikel</Label>
+                    <Label htmlFor="title">Judul Artikel</Label>
                     <Input
-                      id="judul"
-                      value={newArticle.judul}
+                      id="title"
+                      value={newArticle.title}
                       onChange={(e) =>
-                        setNewArticle({ ...newArticle, judul: e.target.value })
+                        setNewArticle({ ...newArticle, title: e.target.value })
                       }
                       placeholder="Masukkan judul artikel..."
                     />
                   </div>
                   <div>
-                    <Label htmlFor="kategori">Kategori</Label>
+                    <Label htmlFor="category">Kategori</Label>
                     <Select
-                      value={newArticle.kategori}
+                      value={newArticle.category}
                       onValueChange={(value) =>
-                        setNewArticle({ ...newArticle, kategori: value })
+                        setNewArticle({ ...newArticle, category: value })
                       }
                     >
                       <SelectTrigger>
@@ -285,41 +326,30 @@ export function BeritaTable() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="ringkasan">Ringkasan</Label>
-                    <Textarea
-                      id="ringkasan"
-                      value={newArticle.ringkasan}
+                    <Label htmlFor="link">Link Artikel</Label>
+                    <Input
+                      id="link"
+                      value={newArticle.link}
+                      onChange={(e) =>
+                        setNewArticle({ ...newArticle, link: e.target.value })
+                      }
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="publication_date">
+                      Tanggal Publikasi (opsional)
+                    </Label>
+                    <Input
+                      id="publication_date"
+                      type="datetime-local"
+                      value={newArticle.publication_date}
                       onChange={(e) =>
                         setNewArticle({
                           ...newArticle,
-                          ringkasan: e.target.value,
+                          publication_date: e.target.value,
                         })
                       }
-                      placeholder="Tulis ringkasan artikel..."
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="konten">Konten Artikel</Label>
-                    <Textarea
-                      id="konten"
-                      value={newArticle.konten}
-                      onChange={(e) =>
-                        setNewArticle({ ...newArticle, konten: e.target.value })
-                      }
-                      placeholder="Tulis konten lengkap artikel..."
-                      rows={6}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="tags">Tags (pisahkan dengan koma)</Label>
-                    <Input
-                      id="tags"
-                      value={newArticle.tags}
-                      onChange={(e) =>
-                        setNewArticle({ ...newArticle, tags: e.target.value })
-                      }
-                      placeholder="contoh: teknologi, inovasi, digital"
                     />
                   </div>
                   <div className="flex justify-end gap-2">
@@ -344,7 +374,6 @@ export function BeritaTable() {
               <TableHead>Penulis</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Views</TableHead>
               <TableHead>Tanggal</TableHead>
               <TableHead>Aksi</TableHead>
             </TableRow>
@@ -355,50 +384,35 @@ export function BeritaTable() {
                 <TableCell>
                   <div className="flex items-start gap-3">
                     <img
-                      src={item.gambar || "/placeholder.svg"}
-                      alt={item.judul}
+                      src={item.image_url || "/placeholder.svg"}
+                      alt={item.title}
                       className="w-16 h-12 object-cover rounded-lg bg-gray-100"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm leading-tight mb-1 line-clamp-2">
-                        {item.judul}
+                        {item.title}
                       </div>
-                      <div className="text-xs text-gray-500 line-clamp-2">
-                        {item.ringkasan}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {item.tags.slice(0, 2).map((tag, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs px-1 py-0"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {item.tags.length > 2 && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs px-1 py-0"
-                          >
-                            +{item.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
+                      {item.link && (
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Lihat artikel
+                        </a>
+                      )}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm">{item.penulis}</TableCell>
-                <TableCell>{getKategoriBadge(item.kategori)}</TableCell>
-                <TableCell>{getStatusBadge(item.status)}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm">
-                    <Users className="w-3 h-3 text-gray-400" />
-                    {item.views}
-                  </div>
+                <TableCell className="text-sm">
+                  {item.alumni?.name || item.alumni?.full_name || "Admin"}
                 </TableCell>
+                <TableCell>{getKategoriBadge(item.category)}</TableCell>
+                <TableCell>{getStatusBadge(item)}</TableCell>
                 <TableCell className="text-sm text-gray-500">
-                  {item.tanggalPublish}
+                  {formatDate(item.publication_date || item.created_at)}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -419,42 +433,50 @@ export function BeritaTable() {
                         {selectedArticle && (
                           <div className="space-y-4">
                             <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                              <ImageIcon className="w-16 h-16 text-gray-400" />
+                              {selectedArticle.image_url ? (
+                                <img
+                                  src={selectedArticle.image_url}
+                                  alt={selectedArticle.title}
+                                  className="w-full h-full object-cover rounded-lg"
+                                />
+                              ) : (
+                                <ImageIcon className="w-16 h-16 text-gray-400" />
+                              )}
                             </div>
                             <div>
                               <h2 className="text-xl font-bold mb-2">
-                                {selectedArticle.judul}
+                                {selectedArticle.title}
                               </h2>
                               <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                                <span>Oleh: {selectedArticle.penulis}</span>
+                                <span>
+                                  Oleh:{" "}
+                                  {selectedArticle.alumni?.name || "Admin"}
+                                </span>
                                 <span>•</span>
-                                <span>{selectedArticle.tanggalPublish}</span>
-                                <span>•</span>
-                                <div className="flex items-center gap-1">
-                                  <Users className="w-3 h-3" />
-                                  {selectedArticle.views} views
-                                </div>
+                                <span>
+                                  {formatDate(
+                                    selectedArticle.publication_date ||
+                                      selectedArticle.created_at
+                                  )}
+                                </span>
                               </div>
                               <div className="flex gap-2 mb-4">
-                                {getKategoriBadge(selectedArticle.kategori)}
-                                {getStatusBadge(selectedArticle.status)}
+                                {getKategoriBadge(selectedArticle.category)}
+                                {getStatusBadge(selectedArticle)}
                               </div>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold mb-2">Ringkasan</h3>
-                              <p className="text-gray-700">
-                                {selectedArticle.ringkasan}
-                              </p>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold mb-2">Tags</h3>
-                              <div className="flex flex-wrap gap-2">
-                                {selectedArticle.tags.map((tag, index) => (
-                                  <Badge key={index} variant="outline">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
+                              {selectedArticle.link && (
+                                <div>
+                                  <a
+                                    href={selectedArticle.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline flex items-center gap-1"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Buka artikel asli
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -472,15 +494,39 @@ export function BeritaTable() {
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Artikel
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Lihat di Website
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Publikasikan
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        {item.link && (
+                          <DropdownMenuItem asChild>
+                            <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Lihat di Website
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        {!item.publication_date && (
+                          <DropdownMenuItem
+                            onClick={() => handlePublishArticle(item.id)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Publikasikan
+                          </DropdownMenuItem>
+                        )}
+                        {item.auth_uid && (
+                          <DropdownMenuItem
+                            onClick={() => handleBlacklistWriter(item.auth_uid)}
+                            className="text-orange-600"
+                          >
+                            <Shield className="w-4 h-4 mr-2" />
+                            Blacklist Penulis
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteArticle(item.id)}
+                          className="text-red-600"
+                        >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Hapus
                         </DropdownMenuItem>
@@ -492,6 +538,16 @@ export function BeritaTable() {
             ))}
           </TableBody>
         </Table>
+
+        {filteredData.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">
+              {searchTerm
+                ? "Tidak ada artikel yang ditemukan"
+                : "Belum ada artikel"}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

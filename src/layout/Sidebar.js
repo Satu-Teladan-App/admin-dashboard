@@ -6,6 +6,7 @@ import {
   Newspaper,
   Wallet,
   MessageCircle,
+  LogOut,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -21,7 +22,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
+import { SignOutButton } from "@/src/element/SignOutButton";
 
 const overview = [
   {
@@ -31,21 +34,11 @@ const overview = [
   },
 ];
 
-const items = [
+const verifications = [
   {
-    title: "Akun",
-    url: "/akun",
+    title: "Alumni",
+    url: "/alumni",
     icon: User,
-  },
-  {
-    title: "Pesan",
-    url: "/pesan",
-    icon: MessageCircle,
-  },
-  {
-    title: "Berita",
-    url: "/berita",
-    icon: Newspaper,
   },
   {
     title: "Komunitas",
@@ -62,6 +55,32 @@ const items = [
     title: "Pendanaan",
     url: "/pendanaan",
     icon: Wallet,
+  },
+];
+
+const blacklistsAndTakedowns = [
+  {
+    title: "Berita",
+    url: "/berita",
+    icon: Newspaper,
+  },
+  {
+    title: "Berita Blacklist",
+    url: "/berita-blacklist",
+    icon: Newspaper,
+  },
+];
+
+const admins = [
+  {
+    title: "Manage",
+    url: "/manage-admin",
+    icon: User,
+  },
+  {
+    title: "Roles & Permissions",
+    url: "/admin-roles",
+    icon: User,
   },
 ];
 
@@ -107,7 +126,43 @@ export function AppSidebar() {
           <SidebarGroupLabel>Verifikasi</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {verifications.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link href={item.url} className="flex items-center gap-2">
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Blacklist & Takedowns</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {blacklistsAndTakedowns.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link href={item.url} className="flex items-center gap-2">
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {admins.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url} className="flex items-center gap-2">
@@ -121,6 +176,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-4">
+        <SignOutButton />
+      </SidebarFooter>
     </Sidebar>
   );
 }
