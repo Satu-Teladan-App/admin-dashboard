@@ -33,46 +33,21 @@ export default function BeritaBlacklistPage() {
     try {
       const { data, error } = await supabase
         .from("berita_blacklist")
-        .select("*")
+        .select(`
+          *,
+          alumniInfo:alumni(user_id, name, full_name, telephone),
+          verificatorInfo:alumni!verificator(user_id, name, full_name)
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       // Get alumni info for each blacklisted user
-      const enrichedData = [];
-      for (const item of data || []) {
-        let alumniInfo = null;
-        let verificatorInfo = null;
-
-        // Try to get alumni info by matching user_id
-        if (item.user_id) {
-          const { data: alumniData } = await supabase
-            .from("alumni")
-            .select("name, full_name, telephone")
-            .eq("user_id", item.user_id)
-            .single();
-
-          alumniInfo = alumniData;
-        }
-
-        // Try to get verificator info by matching verificator_id
-        if (item.verificator_id) {
-          const { data: verificatorData } = await supabase
-            .from("alumni")
-            .select("name, full_name")
-            .eq("user_id", item.verificator_id)
-            .single();
-
-          verificatorInfo = verificatorData;
-        }
-
-        enrichedData.push({
-          ...item,
-          alumniInfo,
-          verificatorInfo,
-        });
-      }
-
+      const enrichedData = (data || []).map(item => ({
+        ...item,
+        alumniInfo: item.alumniInfo || null,
+        verificatorInfo: item.verificatorInfo || null,
+      }));
       setBlacklistData(enrichedData);
     } catch (error) {
       console.error("Error fetching blacklist:", error);
