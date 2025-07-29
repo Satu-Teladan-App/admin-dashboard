@@ -559,18 +559,22 @@ export function KomunitasTable() {
                                     </h3>
                                     <p className="text-sm text-gray-600">
                                       Created by{" "}
-                                      {selectedKomunitas.creatorInfo?.full_name ||
+                                      {selectedKomunitas.creatorInfo
+                                        ?.full_name ||
                                         selectedKomunitas.creatorInfo?.name ||
                                         "Unknown"}
                                     </p>
                                     <p className="text-xs text-gray-500">
                                       {selectedKomunitas.creatorInfo?.batch &&
                                         `Batch ${selectedKomunitas.creatorInfo.batch}`}
-                                      {selectedKomunitas.creatorInfo?.graduation_year &&
+                                      {selectedKomunitas.creatorInfo
+                                        ?.graduation_year &&
                                         ` • ${selectedKomunitas.creatorInfo.graduation_year}`}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                      ID: {selectedKomunitas.creatorInfo?.user_id || "No ID"}
+                                      ID:{" "}
+                                      {selectedKomunitas.creatorInfo?.user_id ||
+                                        "No ID"}
                                     </p>
                                   </div>
                                 </div>
@@ -793,11 +797,14 @@ export function KomunitasTable() {
                 User to Blacklist
               </Label>
               <p className="text-sm text-gray-900">
-                {userToBlacklist?.full_name || userToBlacklist?.name || "Unknown User"}
+                {userToBlacklist?.full_name ||
+                  userToBlacklist?.name ||
+                  "Unknown User"}
               </p>
               <p className="text-xs text-gray-500">
                 {userToBlacklist?.batch && `Batch ${userToBlacklist.batch}`}
-                {userToBlacklist?.graduation_year && ` • ${userToBlacklist.graduation_year}`}
+                {userToBlacklist?.graduation_year &&
+                  ` • ${userToBlacklist.graduation_year}`}
               </p>
               <p className="text-xs text-gray-500">
                 ID: {userToBlacklist?.user_id || "No ID"}

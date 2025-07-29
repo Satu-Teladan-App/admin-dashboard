@@ -2,35 +2,19 @@
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/src/layout/Sidebar";
-import { usePathname } from "next/navigation";
+export const metadata = {
+  title: "Satu Teladan Admin Dashboard",
+  description:
+    "Dashboard administrasi untuk mengelola alumni, komunitas, kegiatan, berita, pendanaan, dan pesan di Satu Teladan.",
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
       <body className={`antialiased`}>
-        <ConditionalLayout>{children}</ConditionalLayout>
+        {children}
         <Toaster />
       </body>
     </html>
-  );
-}
-
-function ConditionalLayout({ children }) {
-  const pathname = usePathname();
-
-  if (pathname === "/sign-in") {
-    return <main>{children}</main>;
-  }
-
-  return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main>
-        <SidebarTrigger />
-        {children}
-      </main>
-    </SidebarProvider>
   );
 }
