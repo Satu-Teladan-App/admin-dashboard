@@ -287,9 +287,9 @@ export function AlumniDataTable() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 space-x-0">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-10">
         <Card className="bg-blue-50 border-blue-100">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -350,9 +350,9 @@ export function AlumniDataTable() {
       </div>
 
       {/* Alumni Table */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between text-lg font-semibold">
             <CardTitle>Alumni Management</CardTitle>
             <Button onClick={fetchAlumni} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -396,15 +396,15 @@ export function AlumniDataTable() {
               </p>
             </div>
           ) : (
-            <Table>
+            <Table className="w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Alumni</TableHead>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Registered</TableHead>
-                  <TableHead>Data Completeness</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Alumni</TableHead>
+                  <TableHead className="w-350 text-center text-lg">Batch</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Status</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Registered</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Data Completeness</TableHead>
+                  <TableHead className="w-0 text-center text-lg">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -418,13 +418,13 @@ export function AlumniDataTable() {
                         alumni.hasReports ? "bg-red-50 border-red-100" : ""
                       }
                     >
-                      <TableCell>
-                        <div className="flex items-center gap-3">
+                      <TableCell className="px-6 text-base"> 
+                        <div className="flex items-center gap-3 py-2">
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                             <User className="w-4 h-4 text-blue-600" />
                           </div>
                           <div>
-                            <div className="font-medium">
+                            <div className="font-bold">
                               {alumni.name || alumni.full_name || "Unknown"}
                             </div>
                             <div className="text-sm text-gray-500">
@@ -433,19 +433,19 @@ export function AlumniDataTable() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center text-base">
                         <Badge variant="outline">{alumni.batch || "N/A"}</Badge>
                       </TableCell>
-                      <TableCell>{getStatusBadge(alumni)}</TableCell>
-                      <TableCell className="text-sm text-gray-500">
+                      <TableCell className="text-center ">{getStatusBadge(alumni)}</TableCell>
+                      <TableCell className="text-sm text-gray-500 text-center text-base">
                         {formatDate(alumni.created_at)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell >
                         <div className="flex items-center gap-2">
                           <div className="text-sm">
                             {completeness.percentage}%
                           </div>
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div className="w-70 bg-gray-200 rounded-full h-2">
                             <div
                               className="bg-blue-600 h-2 rounded-full"
                               style={{ width: `${completeness.percentage}%` }}
@@ -476,7 +476,7 @@ export function AlumniDataTable() {
                                       <Label className="text-sm font-medium text-gray-700">
                                         Name
                                       </Label>
-                                      <p className="text-sm text-gray-900">
+                                      <p className="text-sm text-gray-900 ">
                                         {selectedAlumni.name || "N/A"}
                                       </p>
                                     </div>
