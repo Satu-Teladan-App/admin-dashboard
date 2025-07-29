@@ -4,12 +4,12 @@ export default function DefaultLayout({ className, children, ...props }) {
   return (
     <section
       className={cn(
-        "flex relative w-full mx-auto px-[10px] md:px-4 bg-white",
+        "flex relative w-full bg-white pl-[10px] pr-[100px]",
         className
       )}
       {...props}
     >
-      <div className="relative max-w-[1920px] w-full mx-auto">{children}</div>
+      <div className="w-full">{children}</div>
     </section>
   );
 }
