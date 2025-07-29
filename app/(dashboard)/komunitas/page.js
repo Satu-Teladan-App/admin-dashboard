@@ -2,11 +2,14 @@ import DefaultLayout from "@/src/layout/DefaultLayout";
 import { BreadcrumbLine } from "@/src/element/Breadcrumb";
 import { KomunitasStats } from "@/src/modules/komunitas/KomunitasStats";
 import { KomunitasTable } from "@/src/modules/komunitas/KomunitasTable";
+import HeaderPage from "@/src/layout/Header";
 
 export default function Page() {
   return (
     <DefaultLayout>
-      <BreadcrumbLine legend={"Komunitas"} link={"komunitas"} />
+      <HeaderPage>
+        <BreadcrumbLine legend={"Komunitas"} link={"komunitas"} />
+      </HeaderPage>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">

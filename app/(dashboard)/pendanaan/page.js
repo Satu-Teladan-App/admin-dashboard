@@ -2,11 +2,14 @@ import DefaultLayout from "@/src/layout/DefaultLayout";
 import { BreadcrumbLine } from "@/src/element/Breadcrumb";
 import { PendanaanStats } from "@/src/modules/pendanaan/PendanaanStats";
 import { PendanaanTable } from "@/src/modules/pendanaan/PendanaanTable";
+import HeaderPage from "@/src/layout/Header";
 
 export default function PendanaanPage() {
   return (
     <DefaultLayout>
-      <BreadcrumbLine legend="Pendanaan" link="pendanaan" />
+      <HeaderPage>
+        <BreadcrumbLine legend="Pendanaan" link="pendanaan" />
+      </HeaderPage>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">

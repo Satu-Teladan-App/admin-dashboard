@@ -40,6 +40,8 @@ import { Label } from "@/components/ui/label";
 import { Trash2, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import DefaultLayout from "@/src/layout/DefaultLayout";
+import HeaderPage from "@/src/layout/Header";
+import { BreadcrumbLine } from "@/src/element/Breadcrumb";
 
 export default function ManageAdminPage() {
   const [admins, setAdmins] = useState([]);
@@ -232,6 +234,9 @@ export default function ManageAdminPage() {
 
   return (
     <DefaultLayout>
+      <HeaderPage>
+        <BreadcrumbLine legend="Manage Admin" link="manage-admin" />
+      </HeaderPage>
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <div>

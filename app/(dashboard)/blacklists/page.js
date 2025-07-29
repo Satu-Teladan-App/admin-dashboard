@@ -25,6 +25,7 @@ import {
 import { Search, Trash2, Shield, User, Calendar, Filter } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
+import HeaderPage from "@/src/layout/Header";
 
 const FEATURE_TYPES = [
   { value: "all", label: "All Features" },
@@ -244,7 +245,9 @@ export default function BlacklistPage() {
 
   return (
     <DefaultLayout>
-      <BreadcrumbLine legend="User Blacklist" link="blacklists" />
+      <HeaderPage>
+        <BreadcrumbLine legend="User Blacklist" link="blacklists" />
+      </HeaderPage>
 
       <div className="space-y-6">
         <div>

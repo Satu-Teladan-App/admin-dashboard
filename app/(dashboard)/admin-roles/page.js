@@ -36,6 +36,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Edit, Trash2, Plus, Shield, Settings } from "lucide-react";
 import { toast } from "sonner";
 import DefaultLayout from "@/src/layout/DefaultLayout";
+import HeaderPage from "@/src/layout/Header";
+import { BreadcrumbLine } from "@/src/element/Breadcrumb";
 
 export default function AdminRolesPage() {
   const [roles, setRoles] = useState([]);
@@ -290,6 +292,9 @@ export default function AdminRolesPage() {
 
   return (
     <DefaultLayout>
+      <HeaderPage>
+        <BreadcrumbLine legend="Admin Roles" link="admin-roles" />
+      </HeaderPage>
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
