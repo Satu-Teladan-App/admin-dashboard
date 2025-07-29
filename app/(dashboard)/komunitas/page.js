@@ -16,7 +16,7 @@ export default function Page() {
             Kelola komunitas alumni dan verifikasi status keanggotaan
           </p>
         </div>
-        <KomunitasStats />
+        {/* <KomunitasStats /> */}
         <KomunitasTable />
       </div>
     </DefaultLayout>

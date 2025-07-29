@@ -16,7 +16,7 @@ export default function KegiatanPage() {
             Kelola kegiatan dan acara komunitas alumni
           </p>
         </div>
-        <KegiatanStats />
+        {/* <KegiatanStats /> */}
         <KegiatanTable />
       </div>
     </DefaultLayout>

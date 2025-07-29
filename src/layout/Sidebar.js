@@ -7,6 +7,14 @@ import {
   Wallet,
   MessageCircle,
   LogOut,
+  Shield,
+  Settings,
+  HelpCircle,
+  Bell,
+  Search,
+  Plus,
+  Edit,
+  Ban,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -34,7 +42,7 @@ const overview = [
   },
 ];
 
-const verifications = [
+const featureTypes = [
   {
     title: "Alumni",
     url: "/alumni",
@@ -56,18 +64,23 @@ const verifications = [
     url: "/pendanaan",
     icon: Wallet,
   },
-];
-
-const blacklistsAndTakedowns = [
   {
     title: "Berita",
     url: "/berita",
     icon: Newspaper,
   },
   {
-    title: "Berita Blacklist",
-    url: "/berita-blacklist",
-    icon: Newspaper,
+    title: "Messages",
+    url: "/messages",
+    icon: MessageCircle,
+  },
+];
+
+const blacklists = [
+  {
+    title: "Blacklists",
+    url: "/blacklists",
+    icon: Ban,
   },
 ];
 
@@ -80,7 +93,7 @@ const admins = [
   {
     title: "Roles & Permissions",
     url: "/admin-roles",
-    icon: User,
+    icon: Shield,
   },
 ];
 
@@ -123,10 +136,10 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Verifikasi</SidebarGroupLabel>
+          <SidebarGroupLabel>Feature Types</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {verifications.map((item) => (
+              {featureTypes.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url} className="flex items-center gap-2">
@@ -141,10 +154,10 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Blacklist & Takedowns</SidebarGroupLabel>
+          <SidebarGroupLabel>Blacklist</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {blacklistsAndTakedowns.map((item) => (
+              {blacklists.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url} className="flex items-center gap-2">

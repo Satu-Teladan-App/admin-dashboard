@@ -14,7 +14,7 @@ export default function BeritaPage() {
         </p>
       </div>
 
-      <BeritaStats />
+      {/* <BeritaStats /> */}
       <BeritaTable />
     </DefaultLayout>
   );
