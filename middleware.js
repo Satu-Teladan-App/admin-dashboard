@@ -38,16 +38,16 @@ export async function middleware(request) {
   }
 
   // Check if user has admin role
-  const { data: adminRoles, error: roleError } = await supabase
-    .from("admin_roles")
-    .select("*")
-    .eq("user_id", user.id);
+  // const { data: adminRoles, error: roleError } = await supabase
+  //   .from("admin_roles")
+  //   .select("*")
+  //   .eq("user_id", user.id);
 
-  if (roleError || !adminRoles || adminRoles.length === 0) {
-    // Sign out the user and redirect to sign-in
-    await supabase.auth.signOut();
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
+  // if (roleError || !adminRoles || adminRoles.length === 0) {
+  //   // Sign out the user and redirect to sign-in
+  //   await supabase.auth.signOut();
+  //   return NextResponse.redirect(new URL("/sign-in", request.url));
+  // }
 
   return NextResponse.next();
 }
