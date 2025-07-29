@@ -220,7 +220,7 @@ export function KomunitasTable() {
     try {
       const { data: user } = await supabase.auth.getUser();
       const { error } = await supabase.from("user_feature_blacklist").insert({
-        user_id: userToBlacklist.id,
+        user_id: userToBlacklist.user_id,
         feature: "komunitas",
         reason: blacklistReason,
         blacklisted_by: user?.user?.id,
@@ -306,7 +306,10 @@ export function KomunitasTable() {
     const matchesSearch =
       komunitas.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       komunitas.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      komunitas.creatorInfo?.email
+      komunitas.creatorInfo?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      komunitas.creatorInfo?.full_name
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase());
 
@@ -491,10 +494,18 @@ export function KomunitasTable() {
                         </div>
                         <div>
                           <div className="font-medium">
-                            {komunitas.creatorInfo?.email || "Unknown"}
+                            {komunitas.creatorInfo?.full_name ||
+                              komunitas.creatorInfo?.name ||
+                              "Unknown"}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {komunitas.creatorInfo?.id || "No ID"}
+                            {komunitas.creatorInfo?.batch &&
+                              `Batch ${komunitas.creatorInfo.batch}`}
+                            {komunitas.creatorInfo?.graduation_year &&
+                              ` • ${komunitas.creatorInfo.graduation_year}`}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            ID: {komunitas.creatorInfo?.user_id || "No ID"}
                           </div>
                         </div>
                       </div>
@@ -548,12 +559,18 @@ export function KomunitasTable() {
                                     </h3>
                                     <p className="text-sm text-gray-600">
                                       Created by{" "}
-                                      {selectedKomunitas.creatorInfo?.email ||
+                                      {selectedKomunitas.creatorInfo?.full_name ||
+                                        selectedKomunitas.creatorInfo?.name ||
                                         "Unknown"}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                      {selectedKomunitas.creatorInfo?.id ||
-                                        "No ID"}
+                                      {selectedKomunitas.creatorInfo?.batch &&
+                                        `Batch ${selectedKomunitas.creatorInfo.batch}`}
+                                      {selectedKomunitas.creatorInfo?.graduation_year &&
+                                        ` • ${selectedKomunitas.creatorInfo.graduation_year}`}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      ID: {selectedKomunitas.creatorInfo?.user_id || "No ID"}
                                     </p>
                                   </div>
                                 </div>
@@ -776,7 +793,14 @@ export function KomunitasTable() {
                 User to Blacklist
               </Label>
               <p className="text-sm text-gray-900">
-                {userToBlacklist?.email || "Unknown User"}
+                {userToBlacklist?.full_name || userToBlacklist?.name || "Unknown User"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {userToBlacklist?.batch && `Batch ${userToBlacklist.batch}`}
+                {userToBlacklist?.graduation_year && ` • ${userToBlacklist.graduation_year}`}
+              </p>
+              <p className="text-xs text-gray-500">
+                ID: {userToBlacklist?.user_id || "No ID"}
               </p>
             </div>
             <div>

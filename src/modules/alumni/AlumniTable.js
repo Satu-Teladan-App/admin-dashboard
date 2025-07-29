@@ -162,7 +162,7 @@ export function AlumniDataTable() {
     try {
       const { data: user } = await supabase.auth.getUser();
       const { error } = await supabase.from("user_feature_blacklist").insert({
-        user_id: userToBlacklist.id,
+        user_id: userToBlacklist.user_id,
         feature: "alumni",
         reason: blacklistReason,
         blacklisted_by: user?.user?.id,
