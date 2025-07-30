@@ -411,7 +411,7 @@ export function DataTable({ data: initialData }) {
   ];
 
   return (
-    <div className="flex flex-col gap-4 w-full ">
+    <div className="flex flex-col gap-4 w-full h-1 ">
       {/* Card Statistik */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
         {stats.map((stat) => (

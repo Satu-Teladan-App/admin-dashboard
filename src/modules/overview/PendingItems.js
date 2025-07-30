@@ -155,7 +155,7 @@ export function PendingItems() {
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-6 ">
           <div className="flex items-center justify-center h-64">
             <div className="text-lg">Loading pending items...</div>
           </div>
@@ -165,12 +165,12 @@ export function PendingItems() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-520 mt-5">
       {/* Pending Verifications */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+          <div className="flex items-center justify-between  " >
+            <CardTitle className="flex items-center gap-2 ">
               <Clock className="w-5 h-5 text-orange-600" />
               Pending Verifications
             </CardTitle>

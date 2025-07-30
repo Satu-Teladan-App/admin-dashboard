@@ -404,7 +404,7 @@ export function KomunitasTable() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Komunitas Management</CardTitle>
+            <CardTitle className="text-lg">Komunitas Management</CardTitle>
             <Button onClick={fetchKomunitas} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -450,12 +450,12 @@ export function KomunitasTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Community</TableHead>
-                  <TableHead>Creator</TableHead>
-                  <TableHead>Members</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
+                 <TableHead className=" w-150 text-center text-lg">Community</TableHead>
+                  <TableHead className=" w-150 text-center text-lg">Creator</TableHead>
+                  <TableHead className=" w-150 text-center text-lg">Members</TableHead>
+                  <TableHead className=" w-150 text-center text-lg">Status</TableHead>
+                  <TableHead className=" w-150 text-center text-lg">Created</TableHead>
+                  <TableHead className=" w-150 text-center text-lg">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -487,13 +487,13 @@ export function KomunitasTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className=" text-bold ">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                           <Users className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
-                          <div className="font-medium">
+                           <div className="font-bold">
                             {komunitas.creatorInfo?.full_name ||
                               komunitas.creatorInfo?.name ||
                               "Unknown"}
@@ -510,21 +510,21 @@ export function KomunitasTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
+                    <TableCell className="text-center" >
+                      <div className="flex items-center  justify-center gap-1 text-sm">
                         <Users className="w-3 h-3 text-gray-400" />
                         <span className="font-medium">
                           {komunitas.memberCount}
                         </span>
                         <span className="text-gray-500">members</span>
                       </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(komunitas)}</TableCell>
-                    <TableCell className="text-sm text-gray-500">
+                     </TableCell >
+                    <TableCell className="text-center">{getStatusBadge(komunitas)}</TableCell>
+                    <TableCell className="text-sm text-gray-500 text-center">
                       {formatDate(komunitas.created_at)}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+                    <TableCell className="center"> 
+                      <div className="flex   justify-center items-center gap-2">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button

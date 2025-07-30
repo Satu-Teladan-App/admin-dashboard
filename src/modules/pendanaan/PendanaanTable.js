@@ -392,13 +392,13 @@ export function PendanaanTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Creator</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className=" w-150 text-center text-lg">Campaign</TableHead>
+                <TableHead className=" w-150 text-center text-lg">Creator</TableHead>
+                <TableHead className=" w-150 text-center text-lg">Target</TableHead>
+                <TableHead className=" w-150 text-center text-lg">Progress</TableHead>
+                <TableHead className=" w-150 text-center text-lg">Status</TableHead>
+                <TableHead className=" w-150 text-center text-lg">End Date</TableHead>
+                <TableHead className=" w-150 text-center text-lg">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -450,21 +450,21 @@ export function PendanaanTable() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm font-medium">
+                      <div className="text-sm  text-center font-medium">
                         {formatCurrency(donasi.target_amount)}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span>{formatCurrency(donasi.progress)}</span>
                           <span className="text-gray-500">
                             {progressPercentage}%
                           </span>
                         </div>
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                        <div className="bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-orange-600 h-2 rounded-full"
+                            className="bg-orange-600 h-2 rounded-full "
                             style={{
                               width: `${Math.min(progressPercentage, 100)}%`,
                             }}
@@ -478,7 +478,7 @@ export function PendanaanTable() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
+                      <div className="justify-center flex items-center gap-2">
                         {getStatusBadge(donasi)}
                         {expired && (
                           <Badge variant="destructive" className="block w-fit">
@@ -488,14 +488,14 @@ export function PendanaanTable() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
+                    <TableCell className="text-sm text-gray-500 ">
+                      <div className="flex items-center gap-1 justify-center">
                         <Calendar className="w-3 h-3" />
                         {formatDate(donasi.end_date)}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 justify-center">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
