@@ -435,7 +435,7 @@ export function KegiatanTable() {
       {/* Kegiatan Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mr-auto w-11/12">
             <CardTitle>Kegiatan Management</CardTitle>
             <Button onClick={fetchKegiatan} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -460,7 +460,7 @@ export function KegiatanTable() {
                   <SelectValue placeholder="Filter kegiatan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Kegiatan</SelectItem>
+                  <SelectItem value="all ">All Kegiatan</SelectItem>
                   <SelectItem value="verified">Verified</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="upcoming">Upcoming</SelectItem>
@@ -471,7 +471,7 @@ export function KegiatanTable() {
           </div>
 
           {filteredData.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 ">
               <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">
                 {searchTerm || filterStatus !== "all"
@@ -483,13 +483,13 @@ export function KegiatanTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Organizer</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Attendees</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Event</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Organizer</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Date & Time</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Location</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Attendees</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Status</TableHead>
+                  <TableHead className="w-150 text-center text-lg">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -514,8 +514,8 @@ export function KegiatanTable() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <div className="flex items-center gap-3 ">
+                        <div className=" w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                           <Users className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
@@ -524,37 +524,37 @@ export function KegiatanTable() {
                               kegiatan.creatorInfo?.name ||
                               "Unknown"}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500  " >
                             {kegiatan.creatorInfo?.batch &&
                               `Batch ${kegiatan.creatorInfo.batch}`}
                             {kegiatan.creatorInfo?.graduation_year &&
                               ` • ${kegiatan.creatorInfo.graduation_year}`}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 ">
                             ID: {kegiatan.creatorInfo?.user_id || "No ID"}
                           </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
+                      <div className="text-sm text-center  ">
                         {formatDateTime(
                           kegiatan.kegiatan_date,
                           kegiatan.kegiatan_time
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <MapPin className="w-3 h-3 text-gray-400" />
-                        <span className="truncate max-w-xs">
+                    <TableCell className=" justify-center">
+                      <div className=" flex items-center gap-1 text-sm ">
+                        <MapPin className="w-3 h-3 text-gray-400  " />
+                        <span className="truncate max-w-xs ">
                           {kegiatan.address || "No address"}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
+                      <div className="flex items-center gap-2 justify-center ">
+                        <span className="text-sm font-medium  ">
                           {kegiatan.attendeeCount}
                         </span>
                         {kegiatan.kuota && (
@@ -564,14 +564,14 @@ export function KegiatanTable() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
+                    <TableCell className="justify-center ">
+                      <div className="space-y-1  text-center">
                         {getStatusBadge(kegiatan)}
                         {getEventStatusBadge(kegiatan.kegiatan_date)}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 justify-center ">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
@@ -582,39 +582,39 @@ export function KegiatanTable() {
                               <Eye className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-3xl">
+                          <DialogContent className="max-w-3xl ">
                             <DialogHeader>
                               <DialogTitle>Kegiatan Details</DialogTitle>
                             </DialogHeader>
                             {selectedKegiatan && (
-                              <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-6 ">
+                                <div className="grid grid-cols-2 gap-4 ">
                                   <div>
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-gray-700 ">
                                       Event Name
                                     </Label>
-                                    <p className="text-sm text-gray-900">
+                                    <p className="text-sm text-gray-900 ">
                                       {selectedKegiatan.name}
                                     </p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-gray-700 ">
                                       Organizer
                                     </Label>
-                                    <p className="text-sm text-gray-900">
+                                    <p className="text-sm text-gray-900 ">
                                       {selectedKegiatan.creatorInfo
                                         ?.full_name ||
                                         selectedKegiatan.creatorInfo?.name ||
                                         "Unknown"}
                                     </p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-500 ">
                                       {selectedKegiatan.creatorInfo?.batch &&
                                         `Batch ${selectedKegiatan.creatorInfo.batch}`}
                                       {selectedKegiatan.creatorInfo
                                         ?.graduation_year &&
                                         ` • ${selectedKegiatan.creatorInfo.graduation_year}`}
                                     </p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-500 ">
                                       ID:{" "}
                                       {selectedKegiatan.creatorInfo?.user_id ||
                                         "No ID"}
@@ -624,35 +624,35 @@ export function KegiatanTable() {
                                     <Label className="text-sm font-medium text-gray-700">
                                       Date
                                     </Label>
-                                    <p className="text-sm text-gray-900">
+                                    <p className="text-sm text-gray-900 ">
                                       {formatDate(
                                         selectedKegiatan.kegiatan_date
                                       )}
                                     </p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-gray-700 ">
                                       Time
                                     </Label>
-                                    <p className="text-sm text-gray-900">
+                                    <p className="text-sm text-gray-900 ">
                                       {selectedKegiatan.kegiatan_time || "N/A"}
                                     </p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-gray-700 ">
                                       Attendees
                                     </Label>
-                                    <p className="text-sm text-gray-900">
+                                    <p className="text-sm text-gray-900 text-center">
                                       {selectedKegiatan.attendeeCount}{" "}
                                       {selectedKegiatan.kuota &&
                                         `/ ${selectedKegiatan.kuota}`}
                                     </p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-gray-700 ">
                                       Status
                                     </Label>
-                                    <div className="mt-1 space-y-1">
+                                    <div className="mt-1 space-y-1 ">
                                       {getStatusBadge(selectedKegiatan)}
                                       {getEventStatusBadge(
                                         selectedKegiatan.kegiatan_date
@@ -662,10 +662,10 @@ export function KegiatanTable() {
                                 </div>
 
                                 <div>
-                                  <Label className="text-sm font-medium text-gray-700">
+                                  <Label className="text-sm font-medium text-gray-700 ">
                                     Address
                                   </Label>
-                                  <p className="text-sm text-gray-900">
+                                  <p className="text-sm text-gray-900 ">
                                     {selectedKegiatan.address ||
                                       "No address provided"}
                                   </p>
@@ -673,11 +673,11 @@ export function KegiatanTable() {
 
                                 {selectedKegiatan.description && (
                                   <div>
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-gray-700 ">
                                       Description
                                     </Label>
-                                    <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                                      <p className="text-sm text-gray-900">
+                                    <div className="mt-1 p-3 bg-gray-50 rounded-lg ">
+                                      <p className="text-sm text-gray-900 ">
                                         {selectedKegiatan.description}
                                       </p>
                                     </div>
@@ -706,15 +706,15 @@ export function KegiatanTable() {
 
                                 {selectedKegiatan.reports.length > 0 && (
                                   <div>
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-gray-700 ">
                                       Reports
                                     </Label>
-                                    <div className="mt-1 space-y-2">
+                                    <div className="mt-1 space-y-2 ">
                                       {selectedKegiatan.reports.map(
                                         (report, index) => (
                                           <div
                                             key={report.id}
-                                            className="p-2 bg-red-50 rounded text-sm"
+                                            className="p-2 bg-red-50 rounded text-sm "
                                           >
                                             <p className="text-red-800">
                                               {report.alasan}
@@ -730,7 +730,7 @@ export function KegiatanTable() {
                                   </div>
                                 )}
 
-                                <div className="flex justify-end gap-2">
+                                <div className="flex justify-end gap-2 ">
                                   <Button
                                     variant="outline"
                                     onClick={() =>

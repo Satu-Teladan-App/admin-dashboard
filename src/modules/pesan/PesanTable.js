@@ -320,13 +320,13 @@ export function PesanTable() {
         ) : (
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Sender</TableHead>
-                <TableHead>Receiver</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+              <TableRow className="  ">
+                <TableHead className="w-150 text-center text-lg">Sender</TableHead>
+                <TableHead className="w-150 text-center text-lg">Receiver</TableHead>
+                <TableHead className="w-150 text-center text-lg">Message</TableHead>
+                <TableHead className="w-150 text-center text-lg">Date</TableHead>
+                <TableHead className="w-150 text-center text-lg">Status</TableHead>
+                <TableHead className="w-150 text-center text-lg">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -393,10 +393,10 @@ export function PesanTable() {
                       </p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-gray-500">
+                  <TableCell className="text-sm text-gray-500 text-center">
                     {formatDate(message.created_at)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-sm  text-center">
                     {message.hasReports ? (
                       <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
                         <AlertCircle className="w-3 h-3 mr-1" />
@@ -410,7 +410,7 @@ export function PesanTable() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 justify-center">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button

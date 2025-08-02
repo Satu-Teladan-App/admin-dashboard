@@ -447,7 +447,7 @@ export function BeritaTable() {
       {/* Berita Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between text-lg">
             <CardTitle>Berita Management</CardTitle>
             <div className="flex items-center gap-2">
               <Button onClick={fetchBerita} variant="outline" size="sm">
@@ -516,12 +516,12 @@ export function BeritaTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Article</TableHead>
-                  <TableHead>Writer</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead  className="w-150 text-center text-lg">Article</TableHead>
+                  <TableHead  className="w-150 text-center text-lg">Writer</TableHead>
+                  <TableHead  className="w-150 text-center text-lg">Category</TableHead>
+                  <TableHead  className="w-150 text-center text-lg">Status</TableHead>
+                  <TableHead  className="w-150 text-center text-lg">Date</TableHead>
+                  <TableHead  className="w-150 text-center text-lg">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -580,7 +580,7 @@ export function BeritaTable() {
                               berita.writerInfo?.name ||
                               "Admin"}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 ">
                             {berita.writerInfo?.batch &&
                               `Batch ${berita.writerInfo.batch}`}
                             {berita.writerInfo?.graduation_year &&
@@ -592,13 +592,13 @@ export function BeritaTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{getCategoryBadge(berita.category)}</TableCell>
-                    <TableCell>{getStatusBadge(berita)}</TableCell>
-                    <TableCell className="text-sm text-gray-500">
+                    <TableCell className="text-center">{getCategoryBadge(berita.category)}</TableCell>
+                    <TableCell className="text-center">{getStatusBadge(berita)}</TableCell>
+                    <TableCell className="text-sm text-gray-500 text-center">
                       {formatDate(berita.publication_date || berita.created_at)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 justify-center">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
