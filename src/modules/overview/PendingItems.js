@@ -165,7 +165,7 @@ export function PendingItems() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-520 mt-5">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mr-auto mt-5">
       {/* Pending Verifications */}
       <Card>
         <CardHeader>

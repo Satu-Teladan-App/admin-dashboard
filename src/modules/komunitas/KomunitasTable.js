@@ -336,7 +336,7 @@ export function KomunitasTable() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6  mr-auto w-11/12">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-purple-50 border-purple-100">
@@ -450,12 +450,12 @@ export function KomunitasTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                 <TableHead className=" w-150 text-center text-lg">Community</TableHead>
-                  <TableHead className=" w-150 text-center text-lg">Creator</TableHead>
-                  <TableHead className=" w-150 text-center text-lg">Members</TableHead>
-                  <TableHead className=" w-150 text-center text-lg">Status</TableHead>
-                  <TableHead className=" w-150 text-center text-lg">Created</TableHead>
-                  <TableHead className=" w-150 text-center text-lg">Actions</TableHead>
+                 <TableHead className=" w-50 text-center text-lg">Community</TableHead>
+                  <TableHead className=" w-50 text-center text-lg">Creator</TableHead>
+                  <TableHead className=" w-50 text-center text-lg">Members</TableHead>
+                  <TableHead className=" w-50 text-center text-lg">Status</TableHead>
+                  <TableHead className=" w-50 text-center text-lg">Created</TableHead>
+                  <TableHead className=" w-50 text-center text-lg">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

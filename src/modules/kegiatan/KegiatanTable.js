@@ -435,7 +435,7 @@ export function KegiatanTable() {
       {/* Kegiatan Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mr-auto w-11/12">
             <CardTitle>Kegiatan Management</CardTitle>
             <Button onClick={fetchKegiatan} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />

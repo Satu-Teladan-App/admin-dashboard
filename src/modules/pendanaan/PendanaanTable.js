@@ -392,13 +392,13 @@ export function PendanaanTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className=" w-150 text-center text-lg">Campaign</TableHead>
-                <TableHead className=" w-150 text-center text-lg">Creator</TableHead>
-                <TableHead className=" w-150 text-center text-lg">Target</TableHead>
-                <TableHead className=" w-150 text-center text-lg">Progress</TableHead>
-                <TableHead className=" w-150 text-center text-lg">Status</TableHead>
-                <TableHead className=" w-150 text-center text-lg">End Date</TableHead>
-                <TableHead className=" w-150 text-center text-lg">Actions</TableHead>
+                <TableHead className=" w-100 text-center text-lg">Campaign</TableHead>
+                <TableHead className=" w-100 text-center text-lg">Creator</TableHead>
+                <TableHead className=" w-100 text-center text-lg">Target</TableHead>
+                <TableHead className=" w-100 text-center text-lg">Progress</TableHead>
+                <TableHead className=" w-100 text-center text-lg">Status</TableHead>
+                <TableHead className=" w-100 text-center text-lg">End Date</TableHead>
+                <TableHead className=" w-100 text-center text-lg">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -414,7 +414,7 @@ export function PendanaanTable() {
                     }
                   >
                     <TableCell>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 ">
                         <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
                           <Wallet className="w-4 h-4 text-orange-600" />
                         </div>

@@ -320,7 +320,7 @@ export function PesanTable() {
         ) : (
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="  ">
                 <TableHead className="w-150 text-center text-lg">Sender</TableHead>
                 <TableHead className="w-150 text-center text-lg">Receiver</TableHead>
                 <TableHead className="w-150 text-center text-lg">Message</TableHead>
