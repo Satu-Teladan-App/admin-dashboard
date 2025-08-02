@@ -75,20 +75,29 @@ export function KegiatanTable() {
     try {
       setLoading(true);
 
-      // First, fetch all kegiatan with verification, reports, and attendance
+      // First, fetch all kegiatan with verification and attendance
       const { data: kegiatanData, error: kegiatanError } = await supabase
         .from("kegiatan")
         .select(
           `
           *,
           kegiatan_verification(id, created_at, verificator_id),
-          kegiatan_report(id, alasan, created_at, reporter_id),
           kegiatan_attendance_list(id, alumni_id, created_at)
         `
         )
         .order("created_at", { ascending: false });
 
       if (kegiatanError) throw kegiatanError;
+
+      // Fetch reports for kegiatan separately
+      const { data: reportsData, error: reportsError } = await supabase
+        .from("reports")
+        .select("*")
+        .not("kegiatan_id", "is", null);
+
+      if (reportsError) {
+        console.warn("Error fetching reports:", reportsError);
+      }
 
       // Get unique creator IDs
       const creatorIds = new Set();
@@ -120,20 +129,32 @@ export function KegiatanTable() {
         alumniMap.set(alumni.user_id, alumni);
       });
 
-      const enrichedData = (kegiatanData || []).map((kegiatan) => ({
-        ...kegiatan,
-        creatorInfo: alumniMap.get(kegiatan.creator) || {
-          user_id: kegiatan.creator,
-          name: "Unknown Creator",
-          full_name: "Unknown Creator",
-        },
-        isVerified: (kegiatan.kegiatan_verification || []).length > 0,
-        hasReports: (kegiatan.kegiatan_report || []).length > 0,
-        reportCount: (kegiatan.kegiatan_report || []).length,
-        attendeeCount: (kegiatan.kegiatan_attendance_list || []).length,
-        reports: kegiatan.kegiatan_report || [],
-        attendees: kegiatan.kegiatan_attendance_list || [],
-      }));
+      // Create a map of kegiatan ID to reports
+      const reportsMap = new Map();
+      (reportsData || []).forEach((report) => {
+        if (!reportsMap.has(report.kegiatan_id)) {
+          reportsMap.set(report.kegiatan_id, []);
+        }
+        reportsMap.get(report.kegiatan_id).push(report);
+      });
+
+      const enrichedData = (kegiatanData || []).map((kegiatan) => {
+        const reports = reportsMap.get(kegiatan.id) || [];
+        return {
+          ...kegiatan,
+          creatorInfo: alumniMap.get(kegiatan.creator) || {
+            user_id: kegiatan.creator,
+            name: "Unknown Creator",
+            full_name: "Unknown Creator",
+          },
+          isVerified: (kegiatan.kegiatan_verification || []).length > 0,
+          hasReports: reports.length > 0,
+          reportCount: reports.length,
+          attendeeCount: (kegiatan.kegiatan_attendance_list || []).length,
+          reports: reports,
+          attendees: kegiatan.kegiatan_attendance_list || [],
+        };
+      });
 
       setKegiatanData(enrichedData);
     } catch (error) {
@@ -483,13 +504,27 @@ export function KegiatanTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-150 text-center text-lg">Event</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Organizer</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Date & Time</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Location</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Attendees</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Status</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Actions</TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Event
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Organizer
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Date & Time
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Location
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Attendees
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Status
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -524,7 +559,7 @@ export function KegiatanTable() {
                               kegiatan.creatorInfo?.name ||
                               "Unknown"}
                           </div>
-                          <div className="text-xs text-gray-500  " >
+                          <div className="text-xs text-gray-500  ">
                             {kegiatan.creatorInfo?.batch &&
                               `Batch ${kegiatan.creatorInfo.batch}`}
                             {kegiatan.creatorInfo?.graduation_year &&
