@@ -74,7 +74,9 @@ export function AlumniDataTable() {
   const fetchAlumni = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // First, fetch all alumni with verification
+      const { data: alumniData, error: alumniError } = await supabase
         .from("alumni")
         .select(
           `
@@ -83,21 +85,42 @@ export function AlumniDataTable() {
             id,
             created_at,
             verificator_id
-          ),
-          alumni_report(id, alasan, created_at, reporter_id)
+          )
         `
         )
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (alumniError) throw alumniError;
 
-      const enrichedData = (data || []).map((alumni) => ({
-        ...alumni,
-        isVerified: (alumni.alumni_verification || []).length > 0,
-        hasReports: (alumni.alumni_report || []).length > 0,
-        reportCount: (alumni.alumni_report || []).length,
-        reports: alumni.alumni_report || [],
-      }));
+      // Fetch reports for alumni separately
+      const { data: reportsData, error: reportsError } = await supabase
+        .from("reports")
+        .select("*")
+        .not("alumni_id", "is", null);
+
+      if (reportsError) {
+        console.warn("Error fetching reports:", reportsError);
+      }
+
+      // Create a map of alumni ID to reports
+      const reportsMap = new Map();
+      (reportsData || []).forEach((report) => {
+        if (!reportsMap.has(report.alumni_id)) {
+          reportsMap.set(report.alumni_id, []);
+        }
+        reportsMap.get(report.alumni_id).push(report);
+      });
+
+      const enrichedData = (alumniData || []).map((alumni) => {
+        const reports = reportsMap.get(alumni.id) || [];
+        return {
+          ...alumni,
+          isVerified: (alumni.alumni_verification || []).length > 0,
+          hasReports: reports.length > 0,
+          reportCount: reports.length,
+          reports: reports,
+        };
+      });
 
       setAlumniData(enrichedData);
     } catch (error) {
@@ -396,15 +419,27 @@ export function AlumniDataTable() {
               </p>
             </div>
           ) : (
-            <Table  className="w-full">
+            <Table className="w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-150 text-center text-lg">Alumni</TableHead>
-                  <TableHead className="w-350 text-center text-lg">Batch</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Status</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Registered</TableHead>
-                  <TableHead className="w-150 text-center text-lg">Data Completeness</TableHead>
-                  <TableHead className="w-0 text-center text-lg">Actions</TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Alumni
+                  </TableHead>
+                  <TableHead className="w-350 text-center text-lg">
+                    Batch
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Status
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Registered
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Data Completeness
+                  </TableHead>
+                  <TableHead className="w-0 text-center text-lg">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -418,7 +453,7 @@ export function AlumniDataTable() {
                         alumni.hasReports ? "bg-red-50 border-red-100" : ""
                       }
                     >
-                     <TableCell className="px-6 text-base"> 
+                      <TableCell className="px-6 text-base">
                         <div className="flex items-center gap-3 py-2">
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                             <User className="w-4 h-4 text-blue-600" />

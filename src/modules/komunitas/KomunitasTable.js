@@ -75,20 +75,29 @@ export function KomunitasTable() {
     try {
       setLoading(true);
 
-      // First, fetch all komunitas with verification, reports, and members
+      // First, fetch all komunitas with verification and members
       const { data: komunitasData, error: komunitasError } = await supabase
         .from("komunitas")
         .select(
           `
           *,
           komunitas_verification(id, created_at, verificator_id),
-          komunitas_report(id, alasan, created_at, reporter_id),
           komunitas_member(id, alumni_id, created_at)
         `
         )
         .order("created_at", { ascending: false });
 
       if (komunitasError) throw komunitasError;
+
+      // Fetch reports for komunitas separately
+      const { data: reportsData, error: reportsError } = await supabase
+        .from("reports")
+        .select("*")
+        .not("komunitas_id", "is", null);
+
+      if (reportsError) {
+        console.warn("Error fetching reports:", reportsError);
+      }
 
       // Get unique creator IDs
       const creatorIds = new Set();
@@ -120,20 +129,32 @@ export function KomunitasTable() {
         alumniMap.set(alumni.user_id, alumni);
       });
 
-      const enrichedData = (komunitasData || []).map((komunitas) => ({
-        ...komunitas,
-        creatorInfo: alumniMap.get(komunitas.creator) || {
-          user_id: komunitas.creator,
-          name: "Unknown Creator",
-          full_name: "Unknown Creator",
-        },
-        isVerified: (komunitas.komunitas_verification || []).length > 0,
-        hasReports: (komunitas.komunitas_report || []).length > 0,
-        reportCount: (komunitas.komunitas_report || []).length,
-        memberCount: (komunitas.komunitas_member || []).length,
-        reports: komunitas.komunitas_report || [],
-        members: komunitas.komunitas_member || [],
-      }));
+      // Create a map of komunitas ID to reports
+      const reportsMap = new Map();
+      (reportsData || []).forEach((report) => {
+        if (!reportsMap.has(report.komunitas_id)) {
+          reportsMap.set(report.komunitas_id, []);
+        }
+        reportsMap.get(report.komunitas_id).push(report);
+      });
+
+      const enrichedData = (komunitasData || []).map((komunitas) => {
+        const reports = reportsMap.get(komunitas.id) || [];
+        return {
+          ...komunitas,
+          creatorInfo: alumniMap.get(komunitas.creator) || {
+            user_id: komunitas.creator,
+            name: "Unknown Creator",
+            full_name: "Unknown Creator",
+          },
+          isVerified: (komunitas.komunitas_verification || []).length > 0,
+          hasReports: reports.length > 0,
+          reportCount: reports.length,
+          memberCount: (komunitas.komunitas_member || []).length,
+          reports: reports,
+          members: komunitas.komunitas_member || [],
+        };
+      });
 
       setKomunitasData(enrichedData);
     } catch (error) {
@@ -450,12 +471,24 @@ export function KomunitasTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                 <TableHead className=" w-50 text-center text-lg">Community</TableHead>
-                  <TableHead className=" w-50 text-center text-lg">Creator</TableHead>
-                  <TableHead className=" w-50 text-center text-lg">Members</TableHead>
-                  <TableHead className=" w-50 text-center text-lg">Status</TableHead>
-                  <TableHead className=" w-50 text-center text-lg">Created</TableHead>
-                  <TableHead className=" w-50 text-center text-lg">Actions</TableHead>
+                  <TableHead className=" w-50 text-center text-lg">
+                    Community
+                  </TableHead>
+                  <TableHead className=" w-50 text-center text-lg">
+                    Creator
+                  </TableHead>
+                  <TableHead className=" w-50 text-center text-lg">
+                    Members
+                  </TableHead>
+                  <TableHead className=" w-50 text-center text-lg">
+                    Status
+                  </TableHead>
+                  <TableHead className=" w-50 text-center text-lg">
+                    Created
+                  </TableHead>
+                  <TableHead className=" w-50 text-center text-lg">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -493,7 +526,7 @@ export function KomunitasTable() {
                           <Users className="w-4 h-4 text-blue-600" />
                         </div>
                         <div>
-                           <div className="font-bold">
+                          <div className="font-bold">
                             {komunitas.creatorInfo?.full_name ||
                               komunitas.creatorInfo?.name ||
                               "Unknown"}
@@ -510,7 +543,7 @@ export function KomunitasTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center" >
+                    <TableCell className="text-center">
                       <div className="flex items-center  justify-center gap-1 text-sm">
                         <Users className="w-3 h-3 text-gray-400" />
                         <span className="font-medium">
@@ -518,12 +551,14 @@ export function KomunitasTable() {
                         </span>
                         <span className="text-gray-500">members</span>
                       </div>
-                     </TableCell >
-                    <TableCell className="text-center">{getStatusBadge(komunitas)}</TableCell>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(komunitas)}
+                    </TableCell>
                     <TableCell className="text-sm text-gray-500 text-center">
                       {formatDate(komunitas.created_at)}
                     </TableCell>
-                    <TableCell className="center"> 
+                    <TableCell className="center">
                       <div className="flex   justify-center items-center gap-2">
                         <Dialog>
                           <DialogTrigger asChild>

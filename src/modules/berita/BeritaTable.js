@@ -92,7 +92,6 @@ export function BeritaTable() {
         .select(
           `
           *,
-          berita_report(id, alasan, created_at, reporter_id),
           berita_mentions(alumni_id)
         `
         )
@@ -100,10 +99,20 @@ export function BeritaTable() {
 
       if (beritaError) throw beritaError;
 
+      // Fetch reports for berita separately
+      const { data: reportsData, error: reportsError } = await supabase
+        .from("reports")
+        .select("*")
+        .not("berita_id", "is", null);
+
+      if (reportsError) {
+        console.warn("Error fetching reports:", reportsError);
+      }
+
       // Get unique writer IDs
       const writerIds = new Set();
       beritaData?.forEach((berita) => {
-        if (berita.writer) writerIds.add(berita.writer);
+        if (berita.writer_alumni_id) writerIds.add(berita.writer_alumni_id);
       });
 
       // Fetch alumni information for all writers
@@ -114,7 +123,7 @@ export function BeritaTable() {
           .select(
             "id, user_id, name, full_name, telephone, avatar, batch, graduation_year"
           )
-          .in("user_id", Array.from(writerIds));
+          .in("id", Array.from(writerIds));
 
         if (alumniError) {
           console.warn("Error fetching alumni:", alumniError);
@@ -124,26 +133,38 @@ export function BeritaTable() {
         }
       }
 
-      // Create a map of user ID to alumni info for quick lookup
+      // Create a map of alumni ID to alumni info for quick lookup
       const alumniMap = new Map();
       alumniData.forEach((alumni) => {
-        alumniMap.set(alumni.user_id, alumni);
+        alumniMap.set(alumni.id, alumni);
       });
 
-      const enrichedData = (beritaData || []).map((berita) => ({
-        ...berita,
-        writerInfo: alumniMap.get(berita.writer) || {
-          user_id: berita.writer,
-          name: "Unknown Writer",
-          full_name: "Unknown Writer",
-        },
-        hasReports: (berita.berita_report || []).length > 0,
-        reportCount: (berita.berita_report || []).length,
-        mentionCount: (berita.berita_mentions || []).length,
-        reports: berita.berita_report || [],
-        mentions: berita.berita_mentions || [],
-        isPublished: !!berita.publication_date,
-      }));
+      // Create a map of berita ID to reports
+      const reportsMap = new Map();
+      (reportsData || []).forEach((report) => {
+        if (!reportsMap.has(report.berita_id)) {
+          reportsMap.set(report.berita_id, []);
+        }
+        reportsMap.get(report.berita_id).push(report);
+      });
+
+      const enrichedData = (beritaData || []).map((berita) => {
+        const reports = reportsMap.get(berita.id) || [];
+        return {
+          ...berita,
+          writerInfo: alumniMap.get(berita.writer_alumni_id) || {
+            id: berita.writer_alumni_id,
+            name: "Unknown Writer",
+            full_name: "Unknown Writer",
+          },
+          hasReports: reports.length > 0,
+          reportCount: reports.length,
+          mentionCount: (berita.berita_mentions || []).length,
+          reports: reports,
+          mentions: berita.berita_mentions || [],
+          isPublished: !!berita.publication_date,
+        };
+      });
 
       setBeritaData(enrichedData);
     } catch (error) {
@@ -516,12 +537,24 @@ export function BeritaTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead  className="w-150 text-center text-lg">Article</TableHead>
-                  <TableHead  className="w-150 text-center text-lg">Writer</TableHead>
-                  <TableHead  className="w-150 text-center text-lg">Category</TableHead>
-                  <TableHead  className="w-150 text-center text-lg">Status</TableHead>
-                  <TableHead  className="w-150 text-center text-lg">Date</TableHead>
-                  <TableHead  className="w-150 text-center text-lg">Actions</TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Article
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Writer
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Category
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Status
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Date
+                  </TableHead>
+                  <TableHead className="w-150 text-center text-lg">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -592,8 +625,12 @@ export function BeritaTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center">{getCategoryBadge(berita.category)}</TableCell>
-                    <TableCell className="text-center">{getStatusBadge(berita)}</TableCell>
+                    <TableCell className="text-center">
+                      {getCategoryBadge(berita.category)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(berita)}
+                    </TableCell>
                     <TableCell className="text-sm text-gray-500 text-center">
                       {formatDate(berita.publication_date || berita.created_at)}
                     </TableCell>
