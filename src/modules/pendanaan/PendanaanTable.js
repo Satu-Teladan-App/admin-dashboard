@@ -77,20 +77,29 @@ export function PendanaanTable() {
     try {
       setLoading(true);
 
-      // First, fetch all donasi with reports and transactions
+      // First, fetch all donasi with transactions
       const { data: donasiData, error: donasiError } = await supabase
         .from("donasi")
         .select(
           `
           *,
           donasi_verification(id, created_at, verificator_id),
-          donasi_report(id, alasan, created_at, reporter_id),
           donasi_transaction(id, amount, created_at)
         `
         )
         .order("created_at", { ascending: false });
 
       if (donasiError) throw donasiError;
+
+      // Fetch reports for donasi separately
+      const { data: reportsData, error: reportsError } = await supabase
+        .from("reports")
+        .select("*")
+        .not("donasi_id", "is", null);
+
+      if (reportsError) {
+        console.warn("Error fetching reports:", reportsError);
+      }
 
       // Get unique creator IDs
       const creatorIds = new Set();
@@ -122,20 +131,32 @@ export function PendanaanTable() {
         alumniMap.set(alumni.user_id, alumni);
       });
 
-      const enrichedData = (donasiData || []).map((donasi) => ({
-        ...donasi,
-        creatorInfo: alumniMap.get(donasi.creator) || {
-          user_id: donasi.creator,
-          name: "Unknown Creator",
-          full_name: "Unknown Creator",
-        },
-        isVerified: (donasi.donasi_verification || []).length > 0,
-        hasReports: (donasi.donasi_report || []).length > 0,
-        reportCount: (donasi.donasi_report || []).length,
-        transactionCount: (donasi.donasi_transaction || []).length,
-        reports: donasi.donasi_report || [],
-        transactions: donasi.donasi_transaction || [],
-      }));
+      // Create a map of donasi ID to reports
+      const reportsMap = new Map();
+      (reportsData || []).forEach((report) => {
+        if (!reportsMap.has(report.donasi_id)) {
+          reportsMap.set(report.donasi_id, []);
+        }
+        reportsMap.get(report.donasi_id).push(report);
+      });
+
+      const enrichedData = (donasiData || []).map((donasi) => {
+        const reports = reportsMap.get(donasi.id) || [];
+        return {
+          ...donasi,
+          creatorInfo: alumniMap.get(donasi.creator) || {
+            user_id: donasi.creator,
+            name: "Unknown Creator",
+            full_name: "Unknown Creator",
+          },
+          isVerified: (donasi.donasi_verification || []).length > 0,
+          hasReports: reports.length > 0,
+          reportCount: reports.length,
+          transactionCount: (donasi.donasi_transaction || []).length,
+          reports: reports,
+          transactions: donasi.donasi_transaction || [],
+        };
+      });
 
       setDonasiData(enrichedData);
     } catch (error) {
@@ -392,13 +413,27 @@ export function PendanaanTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className=" w-100 text-center text-lg">Campaign</TableHead>
-                <TableHead className=" w-100 text-center text-lg">Creator</TableHead>
-                <TableHead className=" w-100 text-center text-lg">Target</TableHead>
-                <TableHead className=" w-100 text-center text-lg">Progress</TableHead>
-                <TableHead className=" w-100 text-center text-lg">Status</TableHead>
-                <TableHead className=" w-100 text-center text-lg">End Date</TableHead>
-                <TableHead className=" w-100 text-center text-lg">Actions</TableHead>
+                <TableHead className=" w-100 text-center text-lg">
+                  Campaign
+                </TableHead>
+                <TableHead className=" w-100 text-center text-lg">
+                  Creator
+                </TableHead>
+                <TableHead className=" w-100 text-center text-lg">
+                  Target
+                </TableHead>
+                <TableHead className=" w-100 text-center text-lg">
+                  Progress
+                </TableHead>
+                <TableHead className=" w-100 text-center text-lg">
+                  Status
+                </TableHead>
+                <TableHead className=" w-100 text-center text-lg">
+                  End Date
+                </TableHead>
+                <TableHead className=" w-100 text-center text-lg">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

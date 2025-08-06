@@ -79,24 +79,29 @@ export function PesanTable() {
     try {
       setLoading(true);
 
-      // First, fetch all messages with reports
+      // First, fetch all messages
       const { data: messagesData, error: messagesError } = await supabase
         .from("messages")
-        .select(
-          `
-          *,
-          reports:messages_report(id, alasan, created_at, reporter_id)
-        `
-        )
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (messagesError) throw messagesError;
 
+      // Fetch reports for messages separately
+      const { data: reportsData, error: reportsError } = await supabase
+        .from("reports")
+        .select("*")
+        .not("messages_id", "is", null);
+
+      if (reportsError) {
+        console.warn("Error fetching reports:", reportsError);
+      }
+
       // Get unique user IDs from sender and receiver fields
       const userIds = new Set();
       messagesData?.forEach((message) => {
-        if (message.sender) userIds.add(message.sender);
-        if (message.receiver) userIds.add(message.receiver);
+        if (message.sender_alumni_id) userIds.add(message.sender_alumni_id);
+        if (message.receiver_alumni_id) userIds.add(message.receiver_alumni_id);
       });
 
       // Fetch alumni information for all involved users
@@ -107,7 +112,7 @@ export function PesanTable() {
           .select(
             "id, user_id, name, full_name, telephone, avatar, batch, graduation_year"
           )
-          .in("user_id", Array.from(userIds));
+          .in("id", Array.from(userIds));
 
         if (alumniError) {
           console.warn("Error fetching alumni:", alumniError);
@@ -117,28 +122,40 @@ export function PesanTable() {
         }
       }
 
-      // Create a map of user ID to alumni info for quick lookup
+      // Create a map of alumni ID to alumni info for quick lookup
       const alumniMap = new Map();
       alumniData.forEach((alumni) => {
-        alumniMap.set(alumni.user_id, alumni);
+        alumniMap.set(alumni.id, alumni);
+      });
+
+      // Create a map of message ID to reports
+      const reportsMap = new Map();
+      (reportsData || []).forEach((report) => {
+        if (!reportsMap.has(report.messages_id)) {
+          reportsMap.set(report.messages_id, []);
+        }
+        reportsMap.get(report.messages_id).push(report);
       });
 
       // Enrich messages with alumni information
-      const enrichedMessages = (messagesData || []).map((message) => ({
-        ...message,
-        senderInfo: alumniMap.get(message.sender) || {
-          user_id: message.sender,
-          name: "Unknown User",
-          full_name: "Unknown User",
-        },
-        receiverInfo: alumniMap.get(message.receiver) || {
-          user_id: message.receiver,
-          name: "Unknown User",
-          full_name: "Unknown User",
-        },
-        reports: message.reports || [],
-        hasReports: (message.reports || []).length > 0,
-      }));
+      const enrichedMessages = (messagesData || []).map((message) => {
+        const reports = reportsMap.get(message.id) || [];
+        return {
+          ...message,
+          senderInfo: alumniMap.get(message.sender_alumni_id) || {
+            id: message.sender_alumni_id,
+            name: "Unknown User",
+            full_name: "Unknown User",
+          },
+          receiverInfo: alumniMap.get(message.receiver_alumni_id) || {
+            id: message.receiver_alumni_id,
+            name: "Unknown User",
+            full_name: "Unknown User",
+          },
+          reports: reports,
+          hasReports: reports.length > 0,
+        };
+      });
 
       setMessages(enrichedMessages);
     } catch (error) {
@@ -321,12 +338,24 @@ export function PesanTable() {
           <Table>
             <TableHeader>
               <TableRow className="  ">
-                <TableHead className="w-150 text-center text-lg">Sender</TableHead>
-                <TableHead className="w-150 text-center text-lg">Receiver</TableHead>
-                <TableHead className="w-150 text-center text-lg">Message</TableHead>
-                <TableHead className="w-150 text-center text-lg">Date</TableHead>
-                <TableHead className="w-150 text-center text-lg">Status</TableHead>
-                <TableHead className="w-150 text-center text-lg">Actions</TableHead>
+                <TableHead className="w-150 text-center text-lg">
+                  Sender
+                </TableHead>
+                <TableHead className="w-150 text-center text-lg">
+                  Receiver
+                </TableHead>
+                <TableHead className="w-150 text-center text-lg">
+                  Message
+                </TableHead>
+                <TableHead className="w-150 text-center text-lg">
+                  Date
+                </TableHead>
+                <TableHead className="w-150 text-center text-lg">
+                  Status
+                </TableHead>
+                <TableHead className="w-150 text-center text-lg">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -558,15 +587,6 @@ export function PesanTable() {
                           >
                             <Ban className="w-4 h-4 mr-2" />
                             Blacklist Sender
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setUserToBlacklist(message.receiverInfo);
-                              setShowBlacklistDialog(true);
-                            }}
-                          >
-                            <Shield className="w-4 h-4 mr-2" />
-                            Blacklist Receiver
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
