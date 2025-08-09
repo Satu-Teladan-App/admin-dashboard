@@ -75,7 +75,7 @@ export function AlumniDataTable() {
     try {
       setLoading(true);
 
-      // First, fetch all alumni with verification
+      // First, fetch all alumni with verification and blacklist status
       const { data: alumniData, error: alumniError } = await supabase
         .from("alumni")
         .select(
@@ -102,6 +102,18 @@ export function AlumniDataTable() {
         console.warn("Error fetching reports:", reportsError);
       }
 
+      // Fetch blacklist status for alumni
+      const { data: blacklistData, error: blacklistError } = await supabase
+        .from("user_feature_blacklist")
+        .select("*")
+        .eq("feature", "alumni")
+        .eq("is_active", true)
+        .not("alumni_id", "is", null);
+
+      if (blacklistError) {
+        console.warn("Error fetching blacklist data:", blacklistError);
+      }
+
       // Create a map of alumni ID to reports
       const reportsMap = new Map();
       (reportsData || []).forEach((report) => {
@@ -111,14 +123,25 @@ export function AlumniDataTable() {
         reportsMap.get(report.alumni_id).push(report);
       });
 
+      // Create a map of alumni ID to blacklist status
+      const blacklistMap = new Map();
+      (blacklistData || []).forEach((blacklist) => {
+        if (blacklist.alumni_id) {
+          blacklistMap.set(blacklist.alumni_id, blacklist);
+        }
+      });
+
       const enrichedData = (alumniData || []).map((alumni) => {
         const reports = reportsMap.get(alumni.id) || [];
+        const blacklistInfo = blacklistMap.get(alumni.id);
         return {
           ...alumni,
-          isVerified: (alumni.alumni_verification || []).length > 0,
+          isVerified: !!alumni.alumni_verification, // Fix: it's an object, not an array
           hasReports: reports.length > 0,
           reportCount: reports.length,
           reports: reports,
+          isBlacklisted: !!blacklistInfo,
+          blacklistInfo: blacklistInfo || null,
         };
       });
 
@@ -137,6 +160,18 @@ export function AlumniDataTable() {
     }
 
     try {
+      // First check if already verified to prevent duplicates
+      const { data: existingVerification } = await supabase
+        .from("alumni_verification")
+        .select("id")
+        .eq("alumni_id", alumniId)
+        .single();
+
+      if (existingVerification) {
+        toast.error("This alumni is already verified");
+        return;
+      }
+
       const { data: user } = await supabase.auth.getUser();
       const { error } = await supabase.from("alumni_verification").insert({
         alumni_id: alumniId,
@@ -185,7 +220,8 @@ export function AlumniDataTable() {
     try {
       const { data: user } = await supabase.auth.getUser();
       const { error } = await supabase.from("user_feature_blacklist").insert({
-        user_id: userToBlacklist.user_id,
+        alumni_id: userToBlacklist.id, // Use alumni.id instead of user_id
+        user_id: userToBlacklist.user_id, // Also include user_id if available
         feature: "alumni",
         reason: blacklistReason,
         blacklisted_by: user?.user?.id,
@@ -206,6 +242,31 @@ export function AlumniDataTable() {
     }
   };
 
+  const handleUnblacklistUser = async (alumni) => {
+    if (
+      !confirm("Are you sure you want to remove this user from the blacklist?")
+    ) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("user_feature_blacklist")
+        .update({ is_active: false })
+        .eq("alumni_id", alumni.id)
+        .eq("feature", "alumni")
+        .eq("is_active", true);
+
+      if (error) throw error;
+
+      toast.success("User has been removed from the blacklist");
+      fetchAlumni();
+    } catch (error) {
+      console.error("Error removing blacklist:", error);
+      toast.error("Failed to remove user from blacklist");
+    }
+  };
+
   const handleViewReports = (alumni) => {
     if (alumni.reports.length === 0) {
       toast.info("No reports found for this alumni");
@@ -218,6 +279,15 @@ export function AlumniDataTable() {
   };
 
   const getStatusBadge = (alumni) => {
+    if (alumni.isBlacklisted) {
+      return (
+        <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+          <Ban className="w-3 h-3 mr-1" />
+          Blacklisted
+        </Badge>
+      );
+    }
+
     if (alumni.hasReports) {
       return (
         <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
@@ -251,9 +321,11 @@ export function AlumniDataTable() {
       alumni.graduation_year,
       alumni.batch,
       alumni.domisili,
+      alumni.avatar,
+      alumni.socials,
     ];
     const completedFields = fields.filter(
-      (field) => field && field !== null
+      (field) => field && field !== null && field !== ""
     ).length;
     const percentage = Math.round((completedFields / fields.length) * 100);
 
@@ -264,9 +336,12 @@ export function AlumniDataTable() {
     const total = alumniData.length;
     const verified = alumniData.filter((alumni) => alumni.isVerified).length;
     const reported = alumniData.filter((alumni) => alumni.hasReports).length;
+    const blacklisted = alumniData.filter(
+      (alumni) => alumni.isBlacklisted
+    ).length;
     const pending = total - verified;
 
-    return { total, verified, pending, reported };
+    return { total, verified, pending, reported, blacklisted };
   };
 
   const filteredData = alumniData.filter((alumni) => {
@@ -280,7 +355,8 @@ export function AlumniDataTable() {
       filterStatus === "all" ||
       (filterStatus === "verified" && alumni.isVerified) ||
       (filterStatus === "pending" && !alumni.isVerified) ||
-      (filterStatus === "reported" && alumni.hasReports);
+      (filterStatus === "reported" && alumni.hasReports) ||
+      (filterStatus === "blacklisted" && alumni.isBlacklisted);
 
     return matchesSearch && matchesFilter;
   });
@@ -312,7 +388,7 @@ export function AlumniDataTable() {
   return (
     <div className="space-y-10 space-x-0">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10">
         <Card className="bg-blue-50 border-blue-100">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -370,6 +446,20 @@ export function AlumniDataTable() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="bg-gray-50 border-gray-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Blacklisted</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.blacklisted}
+                </p>
+              </div>
+              <Ban className="w-8 h-8 text-gray-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Alumni Table */}
@@ -404,6 +494,7 @@ export function AlumniDataTable() {
                   <SelectItem value="verified">Verified</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="reported">Reported</SelectItem>
+                  <SelectItem value="blacklisted">Blacklisted</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -450,7 +541,11 @@ export function AlumniDataTable() {
                     <TableRow
                       key={alumni.id}
                       className={
-                        alumni.hasReports ? "bg-red-50 border-red-100" : ""
+                        alumni.isBlacklisted
+                          ? "bg-gray-50 border-gray-200"
+                          : alumni.hasReports
+                          ? "bg-red-50 border-red-100"
+                          : ""
                       }
                     >
                       <TableCell className="px-6 text-base">
@@ -556,6 +651,32 @@ export function AlumniDataTable() {
                                         {getStatusBadge(selectedAlumni)}
                                       </div>
                                     </div>
+                                    {selectedAlumni.isVerified &&
+                                      selectedAlumni.alumni_verification && (
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">
+                                            Verification Details
+                                          </Label>
+                                          <p className="text-sm text-gray-900">
+                                            Verified on:{" "}
+                                            {formatDate(
+                                              selectedAlumni.alumni_verification
+                                                .created_at
+                                            )}
+                                          </p>
+                                          {selectedAlumni.alumni_verification
+                                            .verificator_id && (
+                                            <p className="text-xs text-gray-500">
+                                              Verificator ID:{" "}
+                                              {
+                                                selectedAlumni
+                                                  .alumni_verification
+                                                  .verificator_id
+                                              }
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
                                     <div>
                                       <Label className="text-sm font-medium text-gray-700">
                                         Data Completeness
@@ -608,6 +729,54 @@ export function AlumniDataTable() {
                                     </div>
                                   )}
 
+                                  {selectedAlumni.avatar && (
+                                    <div>
+                                      <Label className="text-sm font-medium text-gray-700">
+                                        Avatar
+                                      </Label>
+                                      <div className="mt-1">
+                                        <img
+                                          src={selectedAlumni.avatar}
+                                          alt="Alumni Avatar"
+                                          className="w-20 h-20 rounded-full object-cover"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {selectedAlumni.latitude &&
+                                    selectedAlumni.longitude && (
+                                      <div>
+                                        <Label className="text-sm font-medium text-gray-700">
+                                          Coordinates
+                                        </Label>
+                                        <p className="text-sm text-gray-900">
+                                          Lat: {selectedAlumni.latitude}, Long:{" "}
+                                          {selectedAlumni.longitude}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                  {selectedAlumni.domisili && (
+                                    <div>
+                                      <Label className="text-sm font-medium text-gray-700">
+                                        Location
+                                      </Label>
+                                      <div className="mt-1 p-3 bg-gray-50 rounded-lg">
+                                        <pre className="text-sm text-gray-900 whitespace-pre-wrap">
+                                          {typeof selectedAlumni.domisili ===
+                                          "string"
+                                            ? selectedAlumni.domisili
+                                            : JSON.stringify(
+                                                selectedAlumni.domisili,
+                                                null,
+                                                2
+                                              )}
+                                        </pre>
+                                      </div>
+                                    </div>
+                                  )}
+
                                   {selectedAlumni.socials && (
                                     <div>
                                       <Label className="text-sm font-medium text-gray-700">
@@ -624,6 +793,31 @@ export function AlumniDataTable() {
                                       </div>
                                     </div>
                                   )}
+
+                                  {selectedAlumni.isBlacklisted &&
+                                    selectedAlumni.blacklistInfo && (
+                                      <div>
+                                        <Label className="text-sm font-medium text-red-700">
+                                          Blacklist Information
+                                        </Label>
+                                        <div className="mt-1 p-3 bg-red-50 rounded-lg border border-red-200">
+                                          <p className="text-sm text-red-800 font-medium">
+                                            Reason:{" "}
+                                            {
+                                              selectedAlumni.blacklistInfo
+                                                .reason
+                                            }
+                                          </p>
+                                          <p className="text-xs text-red-600 mt-1">
+                                            Blacklisted on:{" "}
+                                            {formatDate(
+                                              selectedAlumni.blacklistInfo
+                                                .blacklisted_at
+                                            )}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    )}
 
                                   {selectedAlumni.reports.length > 0 && (
                                     <div>
@@ -682,15 +876,43 @@ export function AlumniDataTable() {
                                   Verify Alumni
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setUserToBlacklist(alumni);
-                                  setShowBlacklistDialog(true);
-                                }}
-                              >
-                                <Ban className="w-4 h-4 mr-2" />
-                                Blacklist User
-                              </DropdownMenuItem>
+                              {!alumni.isBlacklisted ? (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setUserToBlacklist(alumni);
+                                    setShowBlacklistDialog(true);
+                                  }}
+                                >
+                                  <Ban className="w-4 h-4 mr-2" />
+                                  Blacklist User
+                                </DropdownMenuItem>
+                              ) : (
+                                <>
+                                  <DropdownMenuItem disabled>
+                                    <Ban className="w-4 h-4 mr-2" />
+                                    Blacklisted
+                                    {alumni.blacklistInfo?.reason && (
+                                      <span className="text-xs text-gray-500 ml-2">
+                                        (
+                                        {alumni.blacklistInfo.reason.substring(
+                                          0,
+                                          15
+                                        )}
+                                        ...)
+                                      </span>
+                                    )}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleUnblacklistUser(alumni)
+                                    }
+                                    className="text-blue-600"
+                                  >
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Remove from Blacklist
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-red-600"
