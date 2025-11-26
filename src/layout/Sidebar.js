@@ -58,7 +58,16 @@ const featureTypes = [
     url: "/kegiatan",
     icon: Calendar,
   },
-
+  {
+    title: "Tantangan",
+    url: "/tantangan",
+    icon: Plus,
+  },
+  {
+    title: "Kontribusi",
+    url: "/kontribusi",
+    icon: Edit,
+  },
   {
     title: "Pendanaan",
     url: "/pendanaan",
