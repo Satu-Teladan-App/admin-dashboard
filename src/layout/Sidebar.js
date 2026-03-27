@@ -83,6 +83,11 @@ const featureTypes = [
     url: "/messages",
     icon: MessageCircle,
   },
+  {
+    title: "Tickets",
+    url: "/tickets",
+    icon: HelpCircle,
+  },
 ];
 
 const blacklists = [
