@@ -1,66 +1,40 @@
-import { createClient } from "@/utils/supabase/server";
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  let response = NextResponse.next({ request });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll(cookies) {
+          cookies.forEach(({ name, value }) => request.cookies.set(name, value));
+          const previous = response.cookies.getAll();
+          response = NextResponse.next({ request });
+          previous.forEach(cookie => response.cookies.set(cookie));
+          cookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    },
+  );
+  const redirect = (path) => {
+    const target = NextResponse.redirect(new URL(path, request.url));
+    response.cookies.getAll().forEach(cookie => target.cookies.set(cookie));
+    return target;
+  };
 
-  // Check if this is the sign-in page
-  if (request.nextUrl.pathname === "/sign-in") {
-    // If user is already authenticated and has admin role, redirect to dashboard
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return request.nextUrl.pathname === '/sign-in' ? response : redirect('/sign-in');
 
-    if (user) {
-      const { data: adminRoles } = await supabase
-        .from("admin_roles")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (adminRoles && adminRoles.length > 0) {
-        return NextResponse.redirect(new URL("/overview", request.url));
-      }
-    }
-
-    return NextResponse.next();
-  }
-
-  // For all other routes, check authentication
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
-  // Check if user has admin role
-  // const { data: adminRoles, error: roleError } = await supabase
-  //   .from("admin_roles")
-  //   .select("*")
-  //   .eq("user_id", user.id);
-
-  // if (roleError || !adminRoles || adminRoles.length === 0) {
-  //   // Sign out the user and redirect to sign-in
-  //   await supabase.auth.signOut();
-  //   return NextResponse.redirect(new URL("/sign-in", request.url));
-  // }
-
-  return NextResponse.next();
+  const { data: roles, error: roleError } = await supabase
+    .from('admin_roles').select('role_id').eq('user_id', user.id).limit(1);
+  const admin = !roleError && roles?.length > 0;
+  if (request.nextUrl.pathname === '/sign-in') return admin ? redirect('/overview') : response;
+  return admin ? response : redirect('/sign-in');
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public assets
-     */
-    "/((?!_next/static|_next/image|favicon.ico|assets).*)",
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|assets).*)'],
 };

@@ -1,0 +1,4 @@
+project_id = "satu-teladan-admin"
+
+[db]
+major_version = 15

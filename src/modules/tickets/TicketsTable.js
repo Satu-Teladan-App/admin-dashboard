@@ -58,6 +58,7 @@ import { toast } from "sonner";
 export function TicketsTable() {
   const [ticketsData, setTicketsData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -77,6 +78,7 @@ export function TicketsTable() {
   const fetchTickets = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
 
       const { data, error } = await supabase
         .from("support_tickets")
@@ -88,6 +90,7 @@ export function TicketsTable() {
       setTicketsData(data || []);
     } catch (error) {
       console.error("Error fetching tickets:", error);
+      setLoadError(true);
       toast.error("Failed to fetch support tickets");
     } finally {
       setLoading(false);
@@ -139,7 +142,7 @@ export function TicketsTable() {
       await fetchReplies(selectedTicket.id);
 
       // Auto-set status to "in_progress" if it was "open"
-      if (selectedTicket.status === "open") {
+      if (["pending", "open"].includes(selectedTicket.status)) {
         await handleUpdateStatus(selectedTicket.id, "in_progress", false);
       }
     } catch (error) {
@@ -157,8 +160,10 @@ export function TicketsTable() {
         updated_at: new Date().toISOString(),
       };
 
-      if (newStatus === "resolved") {
+      if (["resolved", "closed"].includes(newStatus)) {
         updateData.resolved_at = new Date().toISOString();
+      } else {
+        updateData.resolved_at = null;
       }
 
       const { error } = await supabase
@@ -263,6 +268,8 @@ export function TicketsTable() {
 
   const getStatusBadge = (status) => {
     switch (status) {
+      case "pending":
+        return <Badge className="bg-blue-100 text-blue-800">Menunggu</Badge>;
       case "open":
         return (
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
@@ -315,10 +322,11 @@ export function TicketsTable() {
             High
           </Badge>
         );
+      case "normal":
       case "medium":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            Medium
+            Normal
           </Badge>
         );
       case "low":
@@ -338,7 +346,7 @@ export function TicketsTable() {
 
   const getStats = () => {
     const total = ticketsData.length;
-    const open = ticketsData.filter((t) => t.status === "open").length;
+    const open = ticketsData.filter((t) => ["pending", "open"].includes(t.status)).length;
     const inProgress = ticketsData.filter(
       (t) => t.status === "in_progress",
     ).length;
@@ -385,6 +393,8 @@ export function TicketsTable() {
     );
   }
 
+  if (loadError) return <div role="alert" className="p-6 border border-red-200 text-red-800">Tiket belum dapat dimuat.<button onClick={fetchTickets} className="p-2 underline">Coba lagi</button></div>;
+
   return (
     <div className="space-y-6 mr-auto w-11/12">
       {/* Stats Cards */}
@@ -407,7 +417,7 @@ export function TicketsTable() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Open</p>
+                <p className="text-sm font-medium text-gray-600">Menunggu / Dibuka</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.open}</p>
               </div>
               <Clock className="w-8 h-8 text-sky-600" />
@@ -486,6 +496,7 @@ export function TicketsTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Menunggu</SelectItem>
                 <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
@@ -500,7 +511,7 @@ export function TicketsTable() {
                 <SelectItem value="all">All Priority</SelectItem>
                 <SelectItem value="urgent">Urgent</SelectItem>
                 <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
@@ -734,7 +745,7 @@ export function TicketsTable() {
                   <SelectContent>
                     <SelectItem value="urgent">Urgent</SelectItem>
                     <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
                   </SelectContent>
                 </Select>

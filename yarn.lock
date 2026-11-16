@@ -198,6 +198,11 @@
   dependencies:
     tslib "^2.0.0"
 
+"@electric-sql/pglite@^0.5.15":
+  version "0.5.15"
+  resolved "https://registry.npmjs.org/@electric-sql/pglite/-/pglite-0.5.15.tgz"
+  integrity sha512-ERZWgaRTxueGV4cvL1tfpAOzFCWTXoUtbCBqnf2FhHDVs/so9eAKaanvrwWF9Dntx7BYsmFQujVQ0/B4S8Mmiw==
+
 "@emnapi/core@^1.4.3":
   version "1.4.5"
   resolved "https://registry.npmjs.org/@emnapi/core/-/core-1.4.5.tgz"
@@ -3003,6 +3008,18 @@ picomatch@^2.3.1:
   version "4.0.4"
   resolved "https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz"
   integrity sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==
+
+playwright-core@1.65.0:
+  version "1.65.0"
+  resolved "https://registry.npmjs.org/playwright-core/-/playwright-core-1.65.0.tgz"
+  integrity sha512-vNSKgH6YqtN7cdT/L334zo0a+YwkrpicyrHJlWWPIm/Q+Nn2SWInil01oT0mbu96U4GgoRtCYQD9CzJQgju+lA==
+
+playwright@^1.65.0:
+  version "1.65.0"
+  resolved "https://registry.npmjs.org/playwright/-/playwright-1.65.0.tgz"
+  integrity sha512-F3AMWcR44qMBt4kq+6Kb6mX7bjGXshktKFOPULd7reED6ZJWevjbNRqysP7q+AATE9kdPEZBibex1BYsvpVoeA==
+  dependencies:
+    playwright-core "1.65.0"
 
 possible-typed-array-names@^1.0.0:
   version "1.1.0"

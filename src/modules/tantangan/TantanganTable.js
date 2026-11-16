@@ -1,4 +1,5 @@
 "use client";
+import { archiveContent, confirmedRow } from '@/src/lib/adminOperations';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -153,15 +154,13 @@ export function TantanganTable() {
 
   const handleToggleActive = async (tantanganId, currentStatus) => {
     try {
-      const { error } = await supabase
+      await confirmedRow(supabase
         .from("tantangan")
         .update({
           is_active: !currentStatus,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", tantanganId);
-
-      if (error) throw error;
+        .eq("id", tantanganId).select('id').single());
       toast.success(
         `Tantangan ${!currentStatus ? "activated" : "deactivated"} successfully`
       );
@@ -175,24 +174,19 @@ export function TantanganTable() {
   const handleDeleteTantangan = async (tantanganId) => {
     if (
       !confirm(
-        "Are you sure you want to delete this tantangan? This action cannot be undone."
+        "Arsipkan tantangan ini? Tantangan dinonaktifkan; riwayat kontribusi tetap disimpan."
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("tantangan")
-        .delete()
-        .eq("id", tantanganId);
-
-      if (error) throw error;
-      toast.success("Tantangan deleted successfully");
+      await archiveContent(supabase, 'tantangan', tantanganId);
+      toast.success("Tantangan diarsipkan");
       fetchTantangan();
     } catch (error) {
       console.error("Error deleting tantangan:", error);
-      toast.error("Failed to delete tantangan");
+      toast.error(error.message);
     }
   };
 
@@ -669,7 +663,7 @@ export function TantanganTable() {
                               }
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Delete Tantangan
+                              Arsipkan Tantangan
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

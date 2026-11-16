@@ -1,10 +1,11 @@
+"use client";
+
 import {
   Home,
   User,
   Users,
   Calendar,
   Newspaper,
-  Wallet,
   MessageCircle,
   LogOut,
   Shield,
@@ -18,6 +19,9 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+import { useCallback, useEffect, useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { getMenuPermissions, permissionForPage } from '@/src/lib/adminPagePermissions';
 import Image from "next/image";
 
 import {
@@ -44,6 +48,11 @@ const overview = [
 
 const featureTypes = [
   {
+    title: "Permintaan Akun",
+    url: "/account-requests",
+    icon: Shield,
+  },
+  {
     title: "Alumni",
     url: "/alumni",
     icon: User,
@@ -69,22 +78,17 @@ const featureTypes = [
     icon: Edit,
   },
   {
-    title: "Pendanaan",
-    url: "/pendanaan",
-    icon: Wallet,
-  },
-  {
     title: "Berita",
     url: "/berita",
     icon: Newspaper,
   },
   {
-    title: "Messages",
+    title: "Moderasi Pesan",
     url: "/messages",
     icon: MessageCircle,
   },
   {
-    title: "Tickets",
+    title: "Chat Admin",
     url: "/tickets",
     icon: HelpCircle,
   },
@@ -112,6 +116,18 @@ const admins = [
 ];
 
 export function AppSidebar() {
+  const [client] = useState(createClient);
+  const [allowed, setAllowed] = useState(new Set());
+  const [menuError, setMenuError] = useState(false);
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    let active = true;
+    getMenuPermissions(client).then(permissions => {
+      if (active) { setAllowed(permissions); setMenuError(false); }
+    }).catch(() => { if (active) { setAllowed(new Set()); setMenuError(true); } });
+    return () => { active = false; };
+  }, [client, revision]);
+  const visible = useCallback(item => allowed.has(permissionForPage(item.url)), [allowed]);
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
@@ -131,11 +147,12 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        {menuError && <div role="alert" className="p-3 text-sm text-red-800">Akses menu belum dapat dimuat.<button onClick={() => setRevision(value => value + 1)} className="min-h-11 px-2 underline">Coba Lagi</button></div>}
         <SidebarGroup>
           <SidebarGroupLabel>Dashboards</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {overview.map((item) => (
+              {overview.filter(visible).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url} className="flex items-center gap-2">
@@ -153,7 +170,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Feature Types</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {featureTypes.map((item) => (
+              {featureTypes.filter(visible).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url} className="flex items-center gap-2">
@@ -171,7 +188,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Blacklist</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {blacklists.map((item) => (
+              {blacklists.filter(visible).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url} className="flex items-center gap-2">
@@ -189,7 +206,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Admin</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {admins.map((item) => (
+              {admins.filter(visible).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url} className="flex items-center gap-2">

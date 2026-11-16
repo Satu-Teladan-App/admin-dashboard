@@ -1,4 +1,7 @@
 "use client";
+import { confirmedAdminRpc, confirmedRow } from '@/src/lib/adminOperations';
+
+import { formatProfileIdentity, getAlumniRole, getGraduationYear } from '@/src/lib/profileIdentity';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -136,7 +139,7 @@ export function AlumniDataTable() {
         const blacklistInfo = blacklistMap.get(alumni.id);
         return {
           ...alumni,
-          isVerified: !!alumni.alumni_verification, // Fix: it's an object, not an array
+          isVerified: Array.isArray(alumni.alumni_verification) ? alumni.alumni_verification.length > 0 : Boolean(alumni.alumni_verification?.id),
           hasReports: reports.length > 0,
           reportCount: reports.length,
           reports: reports,
@@ -172,13 +175,7 @@ export function AlumniDataTable() {
         return;
       }
 
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("alumni_verification").insert({
-        alumni_id: alumniId,
-        verificator_id: user?.user?.id,
-      });
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_verify_entity', { p_entity: 'alumni', p_id: alumniId });
       toast.success("Alumni verified successfully");
       fetchAlumni();
     } catch (error) {
@@ -190,24 +187,18 @@ export function AlumniDataTable() {
   const handleDeleteAlumni = async (alumniId) => {
     if (
       !confirm(
-        "Are you sure you want to delete this alumni profile? This action cannot be undone."
+        "Ajukan peninjauan penghapusan akun ini? Profil dan riwayat belum dihapus. Keputusan dapat ditinjau pada halaman Permintaan Akun."
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("alumni")
-        .delete()
-        .eq("id", alumniId);
-
-      if (error) throw error;
-      toast.success("Alumni profile deleted successfully");
-      fetchAlumni();
+      await confirmedAdminRpc(supabase, 'admin_request_account_review', { p_alumni_id: alumniId });
+      toast.success("Permintaan peninjauan tercatat. Akun belum dihapus.");
     } catch (error) {
       console.error("Error deleting alumni:", error);
-      toast.error("Failed to delete alumni profile");
+      toast.error(error.message);
     }
   };
 
@@ -219,7 +210,7 @@ export function AlumniDataTable() {
 
     try {
       const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("user_feature_blacklist").insert({
+      await confirmedRow(supabase.from("user_feature_blacklist").insert({
         alumni_id: userToBlacklist.id, // Use alumni.id instead of user_id
         user_id: userToBlacklist.user_id, // Also include user_id if available
         feature: "alumni",
@@ -227,9 +218,7 @@ export function AlumniDataTable() {
         blacklisted_by: user?.user?.id,
         blacklisted_at: new Date().toISOString(),
         is_active: true,
-      });
-
-      if (error) throw error;
+      }).select('id').single());
 
       toast.success("User has been blacklisted from alumni features");
       setShowBlacklistDialog(false);
@@ -250,14 +239,15 @@ export function AlumniDataTable() {
     }
 
     try {
-      const { error } = await supabase
+      const { data: changed, error } = await supabase
         .from("user_feature_blacklist")
         .update({ is_active: false })
-        .eq("alumni_id", alumni.id)
+        .or(`alumni_id.eq.${alumni.id},user_id.eq.${alumni.user_id}`)
         .eq("feature", "alumni")
-        .eq("is_active", true);
+        .eq("is_active", true).select('id');
 
       if (error) throw error;
+      if (!changed?.length) throw new Error('Tidak ada pemblokiran aktif yang berubah. Muat ulang dan periksa izin akun.');
 
       toast.success("User has been removed from the blacklist");
       fetchAlumni();
@@ -318,8 +308,8 @@ export function AlumniDataTable() {
     const fields = [
       alumni.full_name,
       alumni.telephone,
-      alumni.graduation_year,
-      alumni.batch,
+      ...(getAlumniRole(alumni) === "guru" ? [] : [getGraduationYear(alumni)]),
+      getAlumniRole(alumni),
       alumni.domisili,
       alumni.avatar,
       alumni.socials,
@@ -348,7 +338,7 @@ export function AlumniDataTable() {
     const matchesSearch =
       alumni.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       alumni.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alumni.batch?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      formatProfileIdentity(alumni).toLowerCase().includes(searchTerm.toLowerCase()) ||
       alumni.telephone?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesFilter =
@@ -564,7 +554,7 @@ export function AlumniDataTable() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center text-base">
-                        <Badge variant="outline">{alumni.batch || "N/A"}</Badge>
+                        <Badge variant="outline">{formatProfileIdentity(alumni)}</Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(alumni)}</TableCell>
                       <TableCell className="text-sm text-gray-500">
@@ -628,18 +618,18 @@ export function AlumniDataTable() {
                                     </div>
                                     <div>
                                       <Label className="text-sm font-medium text-gray-700">
-                                        Batch
+                                        Status dan tahun
                                       </Label>
                                       <p className="text-sm text-gray-900">
-                                        {selectedAlumni.batch || "N/A"}
+                                        {formatProfileIdentity(selectedAlumni)}
                                       </p>
                                     </div>
                                     <div>
                                       <Label className="text-sm font-medium text-gray-700">
-                                        Graduation Year
+                                        {getAlumniRole(selectedAlumni) === 'aktif' ? 'Perkiraan tahun lulus' : 'Tahun lulus'}
                                       </Label>
                                       <p className="text-sm text-gray-900">
-                                        {selectedAlumni.graduation_year ||
+                                        {(getAlumniRole(selectedAlumni) === 'guru' ? null : getGraduationYear(selectedAlumni)) ||
                                           "N/A"}
                                       </p>
                                     </div>
@@ -849,7 +839,7 @@ export function AlumniDataTable() {
                             </DialogContent>
                           </Dialog>
 
-                          <DropdownMenu>
+                        <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
                                 <MoreVertical className="w-4 h-4" />
@@ -919,7 +909,7 @@ export function AlumniDataTable() {
                                 onClick={() => handleDeleteAlumni(alumni.id)}
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Delete Profile
+                                Tinjau Penghapusan Akun
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

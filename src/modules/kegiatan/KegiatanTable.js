@@ -1,4 +1,7 @@
 "use client";
+import { archiveContent, confirmedAdminRpc, confirmedRow } from '@/src/lib/adminOperations';
+
+import { formatProfileIdentity } from '@/src/lib/profileIdentity';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -111,7 +114,7 @@ export function KegiatanTable() {
         const { data: alumniDataResult, error: alumniError } = await supabase
           .from("alumni")
           .select(
-            "id, user_id, name, full_name, telephone, avatar, batch, graduation_year"
+            "id, user_id, name, full_name, telephone, avatar, batch, batch_status, graduation_year"
           )
           .in("user_id", Array.from(creatorIds));
 
@@ -147,7 +150,7 @@ export function KegiatanTable() {
             name: "Unknown Creator",
             full_name: "Unknown Creator",
           },
-          isVerified: (kegiatan.kegiatan_verification || []).length > 0,
+          isVerified: Array.isArray(kegiatan.kegiatan_verification) ? kegiatan.kegiatan_verification.length > 0 : Boolean(kegiatan.kegiatan_verification?.id),
           hasReports: reports.length > 0,
           reportCount: reports.length,
           attendeeCount: (kegiatan.kegiatan_attendance_list || []).length,
@@ -193,13 +196,7 @@ export function KegiatanTable() {
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("kegiatan_verification").insert({
-        kegiatan_id: kegiatanId,
-        verificator_id: user?.user?.id,
-      });
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_verify_entity', { p_entity: 'kegiatan', p_id: kegiatanId });
       toast.success("Kegiatan verified successfully");
       fetchKegiatan();
     } catch (error) {
@@ -211,24 +208,19 @@ export function KegiatanTable() {
   const handleDeleteKegiatan = async (kegiatanId) => {
     if (
       !confirm(
-        "Are you sure you want to delete this kegiatan? This action cannot be undone."
+        "Arsipkan kegiatan ini? Kegiatan disembunyikan dan tantangannya dinonaktifkan. Riwayat peserta tetap disimpan."
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("kegiatan")
-        .delete()
-        .eq("id", kegiatanId);
-
-      if (error) throw error;
-      toast.success("Kegiatan deleted successfully");
+      await archiveContent(supabase, 'kegiatan', kegiatanId);
+      toast.success("Kegiatan diarsipkan");
       fetchKegiatan();
     } catch (error) {
       console.error("Error deleting kegiatan:", error);
-      toast.error("Failed to delete kegiatan");
+      toast.error(error.message);
     }
   };
 
@@ -240,16 +232,14 @@ export function KegiatanTable() {
 
     try {
       const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("user_feature_blacklist").insert({
+      await confirmedRow(supabase.from("user_feature_blacklist").insert({
         user_id: userToBlacklist.user_id,
         feature: "kegiatan",
         reason: blacklistReason,
         blacklisted_by: user?.user?.id,
         blacklisted_at: new Date().toISOString(),
         is_active: true,
-      });
-
-      if (error) throw error;
+      }).select('id').single());
 
       toast.success("User has been blacklisted from kegiatan features");
       setShowBlacklistDialog(false);
@@ -560,10 +550,7 @@ export function KegiatanTable() {
                               "Unknown"}
                           </div>
                           <div className="text-xs text-gray-500  ">
-                            {kegiatan.creatorInfo?.batch &&
-                              `Batch ${kegiatan.creatorInfo.batch}`}
-                            {kegiatan.creatorInfo?.graduation_year &&
-                              ` • ${kegiatan.creatorInfo.graduation_year}`}
+                            {formatProfileIdentity(kegiatan.creatorInfo)}
                           </div>
                           <div className="text-xs text-gray-500 ">
                             ID: {kegiatan.creatorInfo?.user_id || "No ID"}
@@ -643,8 +630,7 @@ export function KegiatanTable() {
                                         "Unknown"}
                                     </p>
                                     <p className="text-xs text-gray-500 ">
-                                      {selectedKegiatan.creatorInfo?.batch &&
-                                        `Batch ${selectedKegiatan.creatorInfo.batch}`}
+                                      {formatProfileIdentity(selectedKegiatan.creatorInfo)}
                                       {selectedKegiatan.creatorInfo
                                         ?.graduation_year &&
                                         ` • ${selectedKegiatan.creatorInfo.graduation_year}`}
@@ -782,7 +768,7 @@ export function KegiatanTable() {
                           </DialogContent>
                         </Dialog>
 
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
                               <MoreVertical className="w-4 h-4" />
@@ -832,7 +818,7 @@ export function KegiatanTable() {
                               onClick={() => handleDeleteKegiatan(kegiatan.id)}
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Delete Kegiatan
+                              Arsipkan Kegiatan
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -863,9 +849,7 @@ export function KegiatanTable() {
                   "Unknown User"}
               </p>
               <p className="text-xs text-gray-500">
-                {userToBlacklist?.batch && `Batch ${userToBlacklist.batch}`}
-                {userToBlacklist?.graduation_year &&
-                  ` • ${userToBlacklist.graduation_year}`}
+                {formatProfileIdentity(userToBlacklist)}
               </p>
               <p className="text-xs text-gray-500">
                 ID: {userToBlacklist?.user_id || "No ID"}

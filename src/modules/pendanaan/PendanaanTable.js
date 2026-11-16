@@ -1,4 +1,7 @@
 "use client";
+import { archiveContent, confirmedAdminRpc } from '@/src/lib/adminOperations';
+
+import { formatProfileIdentity } from '@/src/lib/profileIdentity';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -113,7 +116,7 @@ export function PendanaanTable() {
         const { data: alumniDataResult, error: alumniError } = await supabase
           .from("alumni")
           .select(
-            "id, user_id, name, full_name, telephone, avatar, batch, graduation_year"
+            "id, user_id, name, full_name, telephone, avatar, batch, batch_status, graduation_year"
           )
           .in("user_id", Array.from(creatorIds));
 
@@ -149,7 +152,7 @@ export function PendanaanTable() {
             name: "Unknown Creator",
             full_name: "Unknown Creator",
           },
-          isVerified: (donasi.donasi_verification || []).length > 0,
+          isVerified: Array.isArray(donasi.donasi_verification) ? donasi.donasi_verification.length > 0 : Boolean(donasi.donasi_verification?.id),
           hasReports: reports.length > 0,
           reportCount: reports.length,
           transactionCount: (donasi.donasi_transaction || []).length,
@@ -190,13 +193,7 @@ export function PendanaanTable() {
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("donasi_verification").insert({
-        donasi_id: donasiId,
-        verificator_id: user?.user?.id,
-      });
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_verify_entity', { p_entity: 'donasi', p_id: donasiId });
       toast.success("Donation campaign verified successfully");
       fetchDonasi();
     } catch (error) {
@@ -208,24 +205,19 @@ export function PendanaanTable() {
   const handleDeleteDonasi = async (donasiId) => {
     if (
       !confirm(
-        "Are you sure you want to delete this donation campaign? This action cannot be undone."
+        "Arsipkan kampanye ini? Kampanye disembunyikan; riwayat transaksi tetap disimpan. Pembayaran berjalan harus diperiksa terlebih dahulu."
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("donasi")
-        .delete()
-        .eq("id", donasiId);
-
-      if (error) throw error;
-      toast.success("Donation campaign deleted successfully");
+      await archiveContent(supabase, 'donasi', donasiId);
+      toast.success("Kampanye diarsipkan");
       fetchDonasi();
     } catch (error) {
       console.error("Error deleting donasi:", error);
-      toast.error("Failed to delete donation campaign");
+      toast.error(error.message);
     }
   };
 
@@ -244,7 +236,7 @@ export function PendanaanTable() {
         blacklisted_by: user?.user?.id,
         blacklisted_at: new Date().toISOString(),
         is_active: true,
-      });
+      }).select('id').single();
 
       if (error) throw error;
 
@@ -473,10 +465,7 @@ export function PendanaanTable() {
                               "Unknown User"}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {donasi.creatorInfo?.batch &&
-                              `Batch ${donasi.creatorInfo.batch}`}
-                            {donasi.creatorInfo?.graduation_year &&
-                              ` • ${donasi.creatorInfo.graduation_year}`}
+                            {formatProfileIdentity(donasi.creatorInfo)}
                           </div>
                           <div className="text-xs text-gray-500">
                             ID: {donasi.creatorInfo?.user_id || "No ID"}
@@ -576,8 +565,7 @@ export function PendanaanTable() {
                                         "Unknown User"}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                      {selectedDonasi.creatorInfo?.batch &&
-                                        `Batch ${selectedDonasi.creatorInfo.batch}`}
+                                      {formatProfileIdentity(selectedDonasi.creatorInfo)}
                                       {selectedDonasi.creatorInfo
                                         ?.graduation_year &&
                                         ` • ${selectedDonasi.creatorInfo.graduation_year}`}
@@ -696,7 +684,7 @@ export function PendanaanTable() {
                           </DialogContent>
                         </Dialog>
 
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
                               <MoreVertical className="w-4 h-4" />
@@ -744,7 +732,7 @@ export function PendanaanTable() {
                               onClick={() => handleDeleteDonasi(donasi.id)}
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Delete Campaign
+                              Arsipkan Kampanye
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -777,9 +765,7 @@ export function PendanaanTable() {
                     "Unknown User"}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {userToBlacklist?.batch && `Batch ${userToBlacklist.batch}`}
-                  {userToBlacklist?.graduation_year &&
-                    ` • ${userToBlacklist.graduation_year}`}
+                  {formatProfileIdentity(userToBlacklist)}
                 </p>
                 <p className="text-xs text-gray-500">
                   ID: {userToBlacklist?.user_id || "No ID"}

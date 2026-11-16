@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,28 +22,32 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const submitLock = useRef(false);
   const router = useRouter();
   const supabase = createClient();
 
   const handleSignIn = async (e) => {
     e.preventDefault();
+    if (submitLock.current) return;
 
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       toast.error("Please fill in all fields");
       return;
     }
 
+    submitLock.current = true;
     setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
       if (error) {
         throw error;
       }
+      if (!data?.user?.id) throw new Error("Sign in could not be confirmed");
 
       if (data.user) {
         // Check if user has admin role
@@ -57,7 +61,7 @@ export default function SignInPage() {
         }
 
         if (!adminRoles || adminRoles.length === 0) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           throw new Error("Access denied. Admin privileges required.");
         }
 
@@ -69,6 +73,7 @@ export default function SignInPage() {
       console.error("Sign in error:", error);
       toast.error(error.message || "Sign in failed");
     } finally {
+      submitLock.current = false;
       setLoading(false);
     }
   };

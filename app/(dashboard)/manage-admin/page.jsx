@@ -1,4 +1,5 @@
 "use client";
+import { confirmedAdminRpc } from '@/src/lib/adminOperations';
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -155,23 +156,9 @@ export default function ManageAdminPage() {
     }
 
     try {
-      // Check if user is already an admin
-      const { data: existing } = await supabase
-        .from("admin_roles")
-        .select("*")
-        .eq("user_id", selectedAlumni);
-
-      if (existing && existing.length > 0) {
-        toast.error("This user is already an admin");
-        return;
-      }
-
-      const { error } = await supabase.from("admin_roles").insert({
-        user_id: selectedAlumni,
-        role_id: parseInt(selectedRole),
+      await confirmedAdminRpc(supabase, 'admin_set_membership', {
+        p_user_id: selectedAlumni, p_role_id: Number(selectedRole), p_enabled: true,
       });
-
-      if (error) throw error;
 
       toast.success("Admin added successfully");
       setIsAddDialogOpen(false);
@@ -180,24 +167,20 @@ export default function ManageAdminPage() {
       fetchAdmins();
     } catch (error) {
       console.error("Error adding admin:", error);
-      toast.error("Failed to add admin");
+      toast.error(error.message);
     }
   };
 
-  const removeAdmin = async (userId) => {
+  const removeAdmin = async (userId, roleId) => {
+    if (!confirm('Cabut penugasan role ini dari akun tersebut?')) return;
     try {
-      const { error } = await supabase
-        .from("admin_roles")
-        .delete()
-        .eq("user_id", userId);
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_set_membership', { p_user_id: userId, p_role_id: roleId, p_enabled: false });
 
       toast.success("Admin removed successfully");
       fetchAdmins();
     } catch (error) {
       console.error("Error removing admin:", error);
-      toast.error("Failed to remove admin");
+      toast.error(error.message);
     }
   };
 
@@ -219,7 +202,7 @@ export default function ManageAdminPage() {
 
   // Filter available alumni for selection (not already admins + search filter)
   const availableAlumni = alumni
-    .filter((a) => !admins.some((admin) => admin.user_id === a.user_id))
+    .filter((a) => !admins.some((admin) => admin.user_id === a.user_id && String(admin.role_id) === String(selectedRole)))
     .filter((a) =>
       a.name.toLowerCase().includes(alumniSearchQuery.toLowerCase())
     );
@@ -401,7 +384,7 @@ export default function ManageAdminPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => removeAdmin(admin.user_id)}
+                          onClick={() => removeAdmin(admin.user_id, admin.role_id)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />

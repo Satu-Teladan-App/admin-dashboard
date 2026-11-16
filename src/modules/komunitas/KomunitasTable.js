@@ -1,4 +1,7 @@
 "use client";
+import { archiveContent, confirmedAdminRpc, confirmedRow } from '@/src/lib/adminOperations';
+
+import { formatProfileIdentity } from '@/src/lib/profileIdentity';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -111,7 +114,7 @@ export function KomunitasTable() {
         const { data: alumniDataResult, error: alumniError } = await supabase
           .from("alumni")
           .select(
-            "id, user_id, name, full_name, telephone, avatar, batch, graduation_year"
+            "id, user_id, name, full_name, telephone, avatar, batch, batch_status, graduation_year"
           )
           .in("user_id", Array.from(creatorIds));
 
@@ -147,7 +150,7 @@ export function KomunitasTable() {
             name: "Unknown Creator",
             full_name: "Unknown Creator",
           },
-          isVerified: (komunitas.komunitas_verification || []).length > 0,
+          isVerified: Array.isArray(komunitas.komunitas_verification) ? komunitas.komunitas_verification.length > 0 : Boolean(komunitas.komunitas_verification?.id),
           hasReports: reports.length > 0,
           reportCount: reports.length,
           memberCount: (komunitas.komunitas_member || []).length,
@@ -193,13 +196,7 @@ export function KomunitasTable() {
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("komunitas_verification").insert({
-        komunitas_id: komunitasId,
-        verificator_id: user?.user?.id,
-      });
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_verify_entity', { p_entity: 'komunitas', p_id: komunitasId });
       toast.success("Komunitas verified successfully");
       fetchKomunitas();
     } catch (error) {
@@ -211,24 +208,19 @@ export function KomunitasTable() {
   const handleDeleteKomunitas = async (komunitasId) => {
     if (
       !confirm(
-        "Are you sure you want to delete this komunitas? This action cannot be undone."
+        "Arsipkan komunitas ini? Komunitas disembunyikan; riwayat anggota dan laporan tetap disimpan."
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("komunitas")
-        .delete()
-        .eq("id", komunitasId);
-
-      if (error) throw error;
-      toast.success("Komunitas deleted successfully");
+      await archiveContent(supabase, 'komunitas', komunitasId);
+      toast.success("Komunitas diarsipkan");
       fetchKomunitas();
     } catch (error) {
       console.error("Error deleting komunitas:", error);
-      toast.error("Failed to delete komunitas");
+      toast.error(error.message);
     }
   };
 
@@ -240,16 +232,14 @@ export function KomunitasTable() {
 
     try {
       const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("user_feature_blacklist").insert({
+      await confirmedRow(supabase.from("user_feature_blacklist").insert({
         user_id: userToBlacklist.user_id,
         feature: "komunitas",
         reason: blacklistReason,
         blacklisted_by: user?.user?.id,
         blacklisted_at: new Date().toISOString(),
         is_active: true,
-      });
-
-      if (error) throw error;
+      }).select('id').single());
 
       toast.success("User has been blacklisted from komunitas features");
       setShowBlacklistDialog(false);
@@ -532,10 +522,7 @@ export function KomunitasTable() {
                               "Unknown"}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {komunitas.creatorInfo?.batch &&
-                              `Batch ${komunitas.creatorInfo.batch}`}
-                            {komunitas.creatorInfo?.graduation_year &&
-                              ` • ${komunitas.creatorInfo.graduation_year}`}
+                            {formatProfileIdentity(komunitas.creatorInfo)}
                           </div>
                           <div className="text-xs text-gray-500">
                             ID: {komunitas.creatorInfo?.user_id || "No ID"}
@@ -600,8 +587,7 @@ export function KomunitasTable() {
                                         "Unknown"}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                      {selectedKomunitas.creatorInfo?.batch &&
-                                        `Batch ${selectedKomunitas.creatorInfo.batch}`}
+                                      {formatProfileIdentity(selectedKomunitas.creatorInfo)}
                                       {selectedKomunitas.creatorInfo
                                         ?.graduation_year &&
                                         ` • ${selectedKomunitas.creatorInfo.graduation_year}`}
@@ -730,7 +716,7 @@ export function KomunitasTable() {
                           </DialogContent>
                         </Dialog>
 
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
                               <MoreVertical className="w-4 h-4" />
@@ -806,7 +792,7 @@ export function KomunitasTable() {
                               }
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Delete Komunitas
+                              Arsipkan Komunitas
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -837,9 +823,7 @@ export function KomunitasTable() {
                   "Unknown User"}
               </p>
               <p className="text-xs text-gray-500">
-                {userToBlacklist?.batch && `Batch ${userToBlacklist.batch}`}
-                {userToBlacklist?.graduation_year &&
-                  ` • ${userToBlacklist.graduation_year}`}
+                {formatProfileIdentity(userToBlacklist)}
               </p>
               <p className="text-xs text-gray-500">
                 ID: {userToBlacklist?.user_id || "No ID"}

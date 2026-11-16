@@ -1,4 +1,5 @@
 "use client";
+import { confirmedAdminRpc } from '@/src/lib/adminOperations';
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -69,10 +70,11 @@ export default function AdminRolesPage() {
       const rolesWithPermissions = [];
       for (const role of rolesData || []) {
         // Get role permissions
-        const { data: rolePermissions } = await supabase
+        const { data: rolePermissions, error: rolePermissionsError } = await supabase
           .from("role_permissions")
           .select("permission_id")
           .eq("role_id", role.id);
+        if (rolePermissionsError) throw rolePermissionsError;
 
         // Get permission details
         const permissionIds =
@@ -80,10 +82,14 @@ export default function AdminRolesPage() {
         let permissions = [];
 
         if (permissionIds.length > 0) {
-          const { data: permissionsData } = await supabase
+          const { data: permissionsData, error: permissionsError } = await supabase
             .from("permissions")
             .select("id, name, description")
             .in("id", permissionIds);
+          if (permissionsError) throw permissionsError;
+          if (!permissionsData || permissionsData.length !== new Set(permissionIds).size) {
+            throw new Error("Role permissions could not be loaded completely");
+          }
 
           permissions = permissionsData || [];
         }
@@ -124,30 +130,9 @@ export default function AdminRolesPage() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("roles")
-        .insert({
-          name: newRole.name,
-          description: newRole.description,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Add permissions to the role
-      if (selectedPermissions.length > 0) {
-        const rolePermissions = selectedPermissions.map((permissionId) => ({
-          role_id: data.id,
-          permission_id: permissionId,
-        }));
-
-        const { error: permissionError } = await supabase
-          .from("role_permissions")
-          .insert(rolePermissions);
-
-        if (permissionError) throw permissionError;
-      }
+      await confirmedAdminRpc(supabase, 'admin_save_role', {
+        p_id: null, p_name: newRole.name, p_description: newRole.description, p_permissions: selectedPermissions,
+      });
 
       toast.success("Role created successfully");
       setIsCreateDialogOpen(false);
@@ -156,7 +141,7 @@ export default function AdminRolesPage() {
       fetchRoles();
     } catch (error) {
       console.error("Error creating role:", error);
-      toast.error("Failed to create role");
+      toast.error(error.message);
     }
   };
 
@@ -167,36 +152,9 @@ export default function AdminRolesPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from("roles")
-        .update({
-          name: editingRole.name,
-          description: editingRole.description,
-        })
-        .eq("id", editingRole.id);
-
-      if (error) throw error;
-
-      // Update permissions
-      // First, remove existing permissions
-      await supabase
-        .from("role_permissions")
-        .delete()
-        .eq("role_id", editingRole.id);
-
-      // Then add new permissions
-      if (selectedPermissions.length > 0) {
-        const rolePermissions = selectedPermissions.map((permissionId) => ({
-          role_id: editingRole.id,
-          permission_id: permissionId,
-        }));
-
-        const { error: permissionError } = await supabase
-          .from("role_permissions")
-          .insert(rolePermissions);
-
-        if (permissionError) throw permissionError;
-      }
+      await confirmedAdminRpc(supabase, 'admin_save_role', {
+        p_id: editingRole.id, p_name: editingRole.name, p_description: editingRole.description, p_permissions: selectedPermissions,
+      });
 
       toast.success("Role updated successfully");
       setIsEditDialogOpen(false);
@@ -205,7 +163,7 @@ export default function AdminRolesPage() {
       fetchRoles();
     } catch (error) {
       console.error("Error updating role:", error);
-      toast.error("Failed to update role");
+      toast.error(error.message);
     }
   };
 
@@ -219,30 +177,13 @@ export default function AdminRolesPage() {
     }
 
     try {
-      // First check if role is in use
-      const { data: adminRoles } = await supabase
-        .from("admin_roles")
-        .select("*")
-        .eq("role_id", roleId);
-
-      if (adminRoles && adminRoles.length > 0) {
-        toast.error("Cannot delete role that is assigned to users");
-        return;
-      }
-
-      // Delete role permissions first
-      await supabase.from("role_permissions").delete().eq("role_id", roleId);
-
-      // Then delete the role
-      const { error } = await supabase.from("roles").delete().eq("id", roleId);
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_delete_role', { p_id: roleId });
 
       toast.success("Role deleted successfully");
       fetchRoles();
     } catch (error) {
       console.error("Error deleting role:", error);
-      toast.error("Failed to delete role");
+      toast.error(error.message);
     }
   };
 
@@ -259,18 +200,16 @@ export default function AdminRolesPage() {
     }
 
     try {
-      const { error } = await supabase.from("permissions").insert({
-        name: name.trim(),
-        description: description.trim(),
+      await confirmedAdminRpc(supabase, 'admin_save_permission', {
+        p_id: null, p_name: name.trim(), p_description: description.trim(), p_delete: false,
       });
-
-      if (error) throw error;
 
       toast.success("Permission created successfully");
       fetchPermissions();
     } catch (error) {
       console.error("Error creating permission:", error);
-      toast.error("Failed to create permission");
+      toast.error(error.message);
+      throw error;
     }
   };
 
@@ -622,7 +561,8 @@ function PermissionsTab({ permissions, onCreatePermission, onRefresh }) {
   const supabase = createClient();
 
   const handleCreatePermission = async () => {
-    await onCreatePermission(newPermission.name, newPermission.description);
+    try { await onCreatePermission(newPermission.name, newPermission.description); }
+    catch { return; }
     setNewPermission({ name: "", description: "" });
     setIsCreatePermissionDialogOpen(false);
     onRefresh();
@@ -638,30 +578,13 @@ function PermissionsTab({ permissions, onCreatePermission, onRefresh }) {
     }
 
     try {
-      // First check if permission is in use by any roles
-      const { data: rolePermissions } = await supabase
-        .from("role_permissions")
-        .select("*")
-        .eq("permission_id", permissionId);
-
-      if (rolePermissions && rolePermissions.length > 0) {
-        toast.error("Cannot delete permission that is assigned to roles");
-        return;
-      }
-
-      // Delete the permission
-      const { error } = await supabase
-        .from("permissions")
-        .delete()
-        .eq("id", permissionId);
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_save_permission', { p_id: permissionId, p_name: null, p_description: null, p_delete: true });
 
       toast.success("Permission deleted successfully");
       onRefresh();
     } catch (error) {
       console.error("Error deleting permission:", error);
-      toast.error("Failed to delete permission");
+      toast.error(error.message);
     }
   };
 
