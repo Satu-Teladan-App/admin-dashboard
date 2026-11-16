@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   TrendingUp,
@@ -10,6 +10,7 @@ import {
   Reply,
   AlertTriangle,
 } from "lucide-react";
+import { getMessageStats } from '@/src/lib/messageStats';
 import { createClient } from "@/utils/supabase/client";
 
 export function PesanStats() {
@@ -21,52 +22,20 @@ export function PesanStats() {
     loading: true,
   });
 
-  const supabase = createClient();
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      // Get total messages
-      const { count: totalMessages } = await supabase
-        .from("messages")
-        .select("*", { count: "exact", head: true });
-
-      // Get today's messages
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const { count: todayMessages } = await supabase
-        .from("messages")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", today.toISOString());
-
-      // Get recent messages (last 7 days)
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const { count: recentMessages } = await supabase
-        .from("messages")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", weekAgo.toISOString());
-
-      // Get reported messages
-      const { count: reportedMessages } = await supabase
-        .from("messages_report")
-        .select("*", { count: "exact", head: true });
-
-      setStats({
-        totalMessages: totalMessages || 0,
-        todayMessages: todayMessages || 0,
-        recentMessages: recentMessages || 0,
-        reportedMessages: reportedMessages || 0,
-        loading: false,
-      });
-    } catch (error) {
-      console.error("Error fetching message stats:", error);
-      setStats((prev) => ({ ...prev, loading: false }));
-    }
-  };
+  const [supabase] = useState(createClient);
+  const [error, setError] = useState(false);
+  const fetchStats = useCallback(() => getMessageStats(supabase).then(values => {
+    setError(false);
+    setStats({ ...values, loading: false });
+  }).catch(() => {
+    setError(true);
+    setStats(prev => ({ ...prev, loading: false }));
+  }), [supabase]);
+  useEffect(() => { void fetchStats(); }, [fetchStats]);
+  if (error) return <div role="alert" className="p-4 border border-red-200 text-red-800">
+    Statistik pesan belum dapat dimuat.
+    <button onClick={() => { setStats(prev => ({ ...prev, loading: true })); void fetchStats(); }} className="ml-3 p-2 underline">Coba Lagi</button>
+  </div>;
 
   const statsData = [
     {
@@ -97,7 +66,7 @@ export function PesanStats() {
       loading: stats.loading,
     },
     {
-      title: "Reported Messages",
+      title: "Laporan Pesan",
       value: stats.reportedMessages.toLocaleString(),
       icon: AlertTriangle,
       bgColor: "bg-red-50",

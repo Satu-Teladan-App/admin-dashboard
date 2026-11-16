@@ -1,5 +1,8 @@
 "use client";
 
+import { formatProfileIdentity } from '@/src/lib/profileIdentity';
+import { archiveContent, confirmedRow } from '@/src/lib/adminOperations';
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +71,8 @@ export function BeritaTable() {
   const [userToBlacklist, setUserToBlacklist] = useState(null);
   const [blacklistReason, setBlacklistReason] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [savingArticle, setSavingArticle] = useState(false);
   const [newArticle, setNewArticle] = useState({
     title: "",
     category: "",
@@ -121,7 +126,7 @@ export function BeritaTable() {
         const { data: alumniDataResult, error: alumniError } = await supabase
           .from("alumni")
           .select(
-            "id, user_id, name, full_name, telephone, avatar, batch, graduation_year"
+            "id, user_id, name, full_name, telephone, avatar, batch, batch_status, graduation_year"
           )
           .in("id", Array.from(writerIds));
 
@@ -181,12 +186,10 @@ export function BeritaTable() {
     }
 
     try {
-      const { error } = await supabase
+      await confirmedRow(supabase
         .from("berita")
-        .update({ publication_date: new Date().toISOString() })
-        .eq("id", beritaId);
-
-      if (error) throw error;
+        .update({ publication_date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }) })
+        .eq("id", beritaId).select('id').single());
       toast.success("Berita verified and published successfully");
       fetchBerita();
     } catch (error) {
@@ -198,24 +201,19 @@ export function BeritaTable() {
   const handleDeleteBerita = async (beritaId) => {
     if (
       !confirm(
-        "Are you sure you want to delete this berita? This action cannot be undone."
+        "Arsipkan berita ini? Berita tidak lagi tampil di aplikasi. Laporan dan riwayat moderasi tetap disimpan."
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("berita")
-        .delete()
-        .eq("id", beritaId);
-
-      if (error) throw error;
-      toast.success("Berita deleted successfully");
+      await archiveContent(supabase, 'berita', beritaId);
+      toast.success("Berita diarsipkan");
       fetchBerita();
     } catch (error) {
       console.error("Error deleting berita:", error);
-      toast.error("Failed to delete berita");
+      toast.error(error.message);
     }
   };
 
@@ -227,16 +225,14 @@ export function BeritaTable() {
 
     try {
       const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("user_feature_blacklist").insert({
+      await confirmedRow(supabase.from("user_feature_blacklist").insert({
         user_id: userToBlacklist.user_id,
         feature: "berita",
         reason: blacklistReason,
         blacklisted_by: user?.user?.id,
         blacklisted_at: new Date().toISOString(),
         is_active: true,
-      });
-
-      if (error) throw error;
+      }).select('id').single());
 
       toast.success("User has been blacklisted from berita features");
       setShowBlacklistDialog(false);
@@ -250,26 +246,34 @@ export function BeritaTable() {
   };
 
   const handleAddBerita = async () => {
+    if (savingArticle) return;
     if (!newArticle.title.trim()) {
       toast.error("Title is required");
       return;
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("berita").insert({
-        title: newArticle.title,
+      setSavingArticle(true);
+      const record = {
+        title: newArticle.title.trim(),
         category: newArticle.category || null,
         link: newArticle.link || null,
         description: newArticle.description || null,
         image_url: newArticle.image_url || null,
         publication_date: newArticle.publication_date || null,
-        auth_uid: user?.user?.id,
-      });
-
-      if (error) throw error;
-
-      toast.success("Berita added successfully");
+      };
+      let query;
+      if (editingId) query = supabase.from('berita').update(record).eq('id', editingId);
+      else {
+        const { data: user, error: authError } = await supabase.auth.getUser();
+        if (authError || !user?.user) throw new Error('Silakan login kembali.');
+        const { data: profile, error: profileError } = await supabase.from('alumni').select('id').eq('user_id', user.user.id).maybeSingle();
+        if (profileError) throw profileError;
+        query = supabase.from('berita').insert({ ...record, writer: user.user.id, writer_alumni_id: profile?.id || null });
+      }
+      const { data: saved, error } = await query.select('id').single();
+      if (error || !saved?.id) throw error || new Error('Perubahan berita belum terkonfirmasi.');
+      toast.success(editingId ? 'Perubahan berita tersimpan' : 'Berita added successfully');
       setNewArticle({
         title: "",
         category: "",
@@ -279,11 +283,12 @@ export function BeritaTable() {
         publication_date: "",
       });
       setShowAddDialog(false);
+      setEditingId(null);
       fetchBerita();
     } catch (error) {
       console.error("Error adding berita:", error);
-      toast.error("Failed to add berita");
-    }
+      toast.error(error.message || 'Berita belum dapat disimpan');
+    } finally { setSavingArticle(false); }
   };
 
   const handleViewReports = (berita) => {
@@ -475,7 +480,11 @@ export function BeritaTable() {
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              <Button onClick={() => setShowAddDialog(true)} size="sm">
+              <Button onClick={() => {
+                setEditingId(null);
+                setNewArticle({ title: '', category: '', link: '', description: '', image_url: '', publication_date: '' });
+                setShowAddDialog(true);
+              }} size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Berita
               </Button>
@@ -614,10 +623,7 @@ export function BeritaTable() {
                               "Admin"}
                           </div>
                           <div className="text-xs text-gray-500 ">
-                            {berita.writerInfo?.batch &&
-                              `Batch ${berita.writerInfo.batch}`}
-                            {berita.writerInfo?.graduation_year &&
-                              ` • ${berita.writerInfo.graduation_year}`}
+                            {formatProfileIdentity(berita.writerInfo)}
                           </div>
                           <div className="text-xs text-gray-500">
                             ID: {berita.writerInfo?.user_id || "No ID"}
@@ -683,8 +689,7 @@ export function BeritaTable() {
                                         "Admin"}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                      {selectedBerita.writerInfo?.batch &&
-                                        `Batch ${selectedBerita.writerInfo.batch}`}
+                                      {formatProfileIdentity(selectedBerita.writerInfo)}
                                       {selectedBerita.writerInfo
                                         ?.graduation_year &&
                                         ` • ${selectedBerita.writerInfo.graduation_year}`}
@@ -795,7 +800,7 @@ export function BeritaTable() {
                           </DialogContent>
                         </Dialog>
 
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
                               <MoreVertical className="w-4 h-4" />
@@ -822,7 +827,12 @@ export function BeritaTable() {
                                 Verify & Publish
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => {
+                              setEditingId(berita.id);
+                              setNewArticle({ title: berita.title || '', category: berita.category || '', link: berita.link || '',
+                                description: berita.description || '', image_url: berita.image_url || '', publication_date: berita.publication_date?.slice(0, 10) || '' });
+                              setShowAddDialog(true);
+                            }}>
                               <Edit className="w-4 h-4 mr-2" />
                               Edit Berita
                             </DropdownMenuItem>
@@ -855,7 +865,7 @@ export function BeritaTable() {
                               onClick={() => handleDeleteBerita(berita.id)}
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Delete Berita
+                              Arsipkan Berita
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -873,7 +883,7 @@ export function BeritaTable() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add New Berita</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit Berita' : 'Add New Berita'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -925,7 +935,7 @@ export function BeritaTable() {
                 <Label htmlFor="publication_date">Publication Date</Label>
                 <Input
                   id="publication_date"
-                  type="datetime-local"
+                  type="date"
                   value={newArticle.publication_date}
                   onChange={(e) =>
                     setNewArticle({
@@ -977,9 +987,9 @@ export function BeritaTable() {
               </Button>
               <Button
                 onClick={handleAddBerita}
-                disabled={!newArticle.title.trim()}
+                disabled={savingArticle || !newArticle.title.trim()}
               >
-                Add Berita
+                {savingArticle ? 'Menyimpan…' : editingId ? 'Simpan Perubahan' : 'Add Berita'}
               </Button>
             </div>
           </div>
@@ -1003,9 +1013,7 @@ export function BeritaTable() {
                   "Unknown User"}
               </p>
               <p className="text-xs text-gray-500">
-                {userToBlacklist?.batch && `Batch ${userToBlacklist.batch}`}
-                {userToBlacklist?.graduation_year &&
-                  ` • ${userToBlacklist.graduation_year}`}
+                {formatProfileIdentity(userToBlacklist)}
               </p>
               <p className="text-xs text-gray-500">
                 ID: {userToBlacklist?.user_id || "No ID"}

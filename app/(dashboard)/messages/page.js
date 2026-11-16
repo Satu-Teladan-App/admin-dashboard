@@ -11,9 +11,9 @@ export default function PesanPage() {
         <BreadcrumbLine legend="Pesan" link="pesan" />
       </HeaderPage>
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Pesan</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Moderasi Pesan Antaralumni</h1>
         <p className="text-gray-600">
-          Kelola pesan masuk dari pengguna dan komunikasi sistem
+          Kelola pesan antaralumni dan laporannya. Percakapan bantuan ada di menu Chat Admin.
         </p>
       </div>
 

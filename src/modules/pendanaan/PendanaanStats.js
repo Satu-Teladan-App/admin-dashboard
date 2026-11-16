@@ -25,11 +25,7 @@ export function PendanaanStats() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  async function fetchStats() {
     try {
       // Get total donasi count
       const { count: totalCount } = await supabase
@@ -82,6 +78,10 @@ export function PendanaanStats() {
       setStats((prev) => ({ ...prev, loading: false }));
     }
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchStats);
+  }, []);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("id-ID", {

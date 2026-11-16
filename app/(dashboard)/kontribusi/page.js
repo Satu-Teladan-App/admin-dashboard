@@ -15,7 +15,7 @@ export default function Page() {
             Kontribusi Management
           </h1>
           <p className="text-gray-600">
-            Kelola kontribusi alumni dari tantangan dan donasi
+            Tinjau perolehan poin alumni dari tantangan
           </p>
         </div>
         <KontribusiTable />

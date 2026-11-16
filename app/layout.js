@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 export const metadata = {
   title: "Satu Teladan Admin Dashboard",
   description:
-    "Dashboard administrasi untuk mengelola alumni, komunitas, kegiatan, berita, pendanaan, dan pesan di Satu Teladan.",
+    "Dashboard administrasi untuk mengelola alumni, komunitas, kegiatan, berita, dan pesan di Satu Teladan.",
 };
 
 export default function RootLayout({ children }) {

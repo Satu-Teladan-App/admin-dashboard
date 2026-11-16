@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,12 @@ import {
   User,
   Users,
   Calendar,
-  Wallet,
   Newspaper,
   Eye,
   CheckCircle,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { confirmedAdminRpc } from '@/src/lib/adminOperations';
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -23,20 +23,17 @@ export function PendingItems() {
     alumni: [],
     komunitas: [],
     kegiatan: [],
-    donasi: [],
     berita: [],
   });
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [supabase] = useState(createClient);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    fetchPendingItems();
-  }, []);
-
-  const fetchPendingItems = async () => {
+  const fetchPendingItems = useCallback(async () => {
+    setError(false);
     try {
       // Fetch unverified alumni
-      const { data: pendingAlumni } = await supabase
+      const { data: pendingAlumni, error: alumniError } = await supabase
         .from("alumni")
         .select(
           `
@@ -47,11 +44,11 @@ export function PendingItems() {
           alumni_verification (id)
         `
         )
-        .is("alumni_verification.id", null)
+        .is("alumni_verification", null)
         .limit(5);
 
       // Fetch unverified komunitas
-      const { data: pendingKomunitas } = await supabase
+      const { data: pendingKomunitas, error: komunitasError } = await supabase
         .from("komunitas")
         .select(
           `
@@ -61,11 +58,11 @@ export function PendingItems() {
           komunitas_verification (id)
         `
         )
-        .is("komunitas_verification.id", null)
+        .is("komunitas_verification", null)
         .limit(5);
 
       // Fetch unverified kegiatan
-      const { data: pendingKegiatan } = await supabase
+      const { data: pendingKegiatan, error: kegiatanError } = await supabase
         .from("kegiatan")
         .select(
           `
@@ -75,56 +72,35 @@ export function PendingItems() {
           kegiatan_verification (id)
         `
         )
-        .is("kegiatan_verification.id", null)
-        .limit(5);
-
-      // Fetch unverified donasi
-      const { data: pendingDonasi } = await supabase
-        .from("donasi")
-        .select(
-          `
-          id,
-          event_name,
-          created_at,
-          donasi_verification (id)
-        `
-        )
-        .is("donasi_verification.id", null)
+        .is("kegiatan_verification", null)
         .limit(5);
 
       // Fetch recent berita (no verification table, so just show recent ones)
-      const { data: recentBerita } = await supabase
+      const { data: recentBerita, error: beritaError } = await supabase
         .from("berita")
         .select("id, title, created_at")
         .order("created_at", { ascending: false })
         .limit(5);
 
+      for (const failure of [alumniError, komunitasError, kegiatanError, beritaError]) if (failure) throw failure;
       setPendingItems({
         alumni: pendingAlumni || [],
         komunitas: pendingKomunitas || [],
         kegiatan: pendingKegiatan || [],
-        donasi: pendingDonasi || [],
         berita: recentBerita || [],
       });
     } catch (error) {
       console.error("Error fetching pending items:", error);
+      setError(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
+  useEffect(() => { void fetchPendingItems(); }, [fetchPendingItems]);
 
   const handleQuickVerify = async (type, id) => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      const tableName = `${type}_verification`;
-      const columnName = `${type}_id`;
-
-      const { error } = await supabase.from(tableName).insert({
-        [columnName]: id,
-        verificator_id: user?.user?.id,
-      });
-
-      if (error) throw error;
+      await confirmedAdminRpc(supabase, 'admin_verify_entity', { p_entity: type, p_id: id });
 
       toast.success(
         `${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully`
@@ -147,10 +123,11 @@ export function PendingItems() {
     return (
       pendingItems.alumni.length +
       pendingItems.komunitas.length +
-      pendingItems.kegiatan.length +
-      pendingItems.donasi.length
+      pendingItems.kegiatan.length
     );
   };
+
+  if (error) return <div role="alert" className="p-4 border border-red-200 text-red-800">Daftar peninjauan belum dapat dimuat.<button onClick={fetchPendingItems} className="ml-3 p-2 underline">Coba Lagi</button></div>;
 
   if (loading) {
     return (
@@ -271,38 +248,6 @@ export function PendingItems() {
                 </Button>
                 <Button size="sm" variant="ghost" asChild>
                   <Link href="/kegiatan">
-                    <Eye className="w-3 h-3" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ))}
-
-          {/* Donasi */}
-          {pendingItems.donasi.map((donasi) => (
-            <div
-              key={donasi.id}
-              className="flex items-center justify-between p-3 bg-orange-50 rounded-lg"
-            >
-              <div className="flex items-center gap-3">
-                <Wallet className="w-4 h-4 text-orange-600" />
-                <div>
-                  <p className="font-medium text-sm">{donasi.event_name}</p>
-                  <p className="text-xs text-gray-500">
-                    Donasi • {formatDate(donasi.created_at)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickVerify("donasi", donasi.id)}
-                >
-                  <CheckCircle className="w-3 h-3" />
-                </Button>
-                <Button size="sm" variant="ghost" asChild>
-                  <Link href="/pendanaan">
                     <Eye className="w-3 h-3" />
                   </Link>
                 </Button>

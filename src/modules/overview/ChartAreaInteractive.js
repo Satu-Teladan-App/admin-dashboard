@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -28,10 +27,6 @@ const chartConfig = {
     label: "Kegiatan",
     color: "hsl(var(--chart-2))",
   },
-  donasi: {
-    label: "Donasi",
-    color: "hsl(var(--chart-3))",
-  },
   berita: {
     label: "Berita",
     color: "hsl(var(--chart-4))",
@@ -41,6 +36,7 @@ const chartConfig = {
 export function ChartAreaInteractive() {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [activeChart, setActiveChart] = useState("alumni");
   const supabase = createClient();
 
@@ -49,23 +45,21 @@ export function ChartAreaInteractive() {
   }, []);
 
   const fetchChartData = async () => {
+    setLoading(true);
+    setError(false);
     try {
       // Get data for the last 6 months
       const months = [];
-      const now = new Date();
+      const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
 
       for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const nextMonth = new Date(
-          now.getFullYear(),
-          now.getMonth() - i + 1,
-          1
-        );
+        const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1) - 7 * 60 * 60 * 1000);
+        const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i + 1, 1) - 7 * 60 * 60 * 1000);
 
-        const monthName = date.toLocaleDateString("id-ID", { month: "short" });
+        const monthName = date.toLocaleDateString("id-ID", { month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
 
         // Fetch counts for each category for this month
-        const [alumniCount, kegiatanCount, donasiCount, beritaCount] =
+        const [alumniCount, kegiatanCount, beritaCount] =
           await Promise.all([
             supabase
               .from("alumni")
@@ -79,11 +73,6 @@ export function ChartAreaInteractive() {
               .gte("created_at", date.toISOString())
               .lt("created_at", nextMonth.toISOString()),
 
-            supabase
-              .from("donasi")
-              .select("*", { count: "exact", head: true })
-              .gte("created_at", date.toISOString())
-              .lt("created_at", nextMonth.toISOString()),
 
             supabase
               .from("berita")
@@ -92,11 +81,14 @@ export function ChartAreaInteractive() {
               .lt("created_at", nextMonth.toISOString()),
           ]);
 
+        for (const result of [alumniCount, kegiatanCount, beritaCount]) {
+          if (result.error) throw result.error;
+        }
         months.push({
           date: monthName,
           alumni: alumniCount.count || 0,
           kegiatan: kegiatanCount.count || 0,
-          donasi: donasiCount.count || 0,
+
           berita: beritaCount.count || 0,
         });
       }
@@ -104,6 +96,7 @@ export function ChartAreaInteractive() {
       setChartData(months);
     } catch (error) {
       console.error("Error fetching chart data:", error);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -113,12 +106,13 @@ export function ChartAreaInteractive() {
     () => ({
       alumni: chartData.reduce((acc, curr) => acc + curr.alumni, 0),
       kegiatan: chartData.reduce((acc, curr) => acc + curr.kegiatan, 0),
-      donasi: chartData.reduce((acc, curr) => acc + curr.donasi, 0),
+
       berita: chartData.reduce((acc, curr) => acc + curr.berita, 0),
     }),
     [chartData]
   );
 
+  if (error) return <div role="alert" className="p-5 border border-red-200 text-red-800">Grafik belum dapat dimuat.<button onClick={fetchChartData} className="p-2 underline">Coba lagi</button></div>;
   if (loading) {
     return (
       <Card>
@@ -135,13 +129,13 @@ export function ChartAreaInteractive() {
     <Card>
       <CardHeader className="flex flex-col items-stretch space-y-10 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-          <CardTitle>Activity Overview</CardTitle>
+          <CardTitle>Pertambahan Profil dan Konten</CardTitle>
           <CardDescription>
-            Showing activity trends for the last 6 months
+            Jumlah record dibuat per bulan selama enam bulan terakhir (WIB), bukan anggota aktif.
           </CardDescription>
         </div>
         <div className="flex">
-          {["alumni", "kegiatan", "donasi", "berita"].map((key) => {
+          {["alumni", "kegiatan", "berita"].map((key) => {
             const chart = key;
             return (
               <button
@@ -219,10 +213,10 @@ export function ChartAreaInteractive() {
         <div className="flex w-full items-start gap-2 text-sm">
           <div className="grid gap-2">
             <div className="flex items-center gap-2 font-medium leading-none">
-              Activity trends over time <TrendingUp className="h-4 w-4" />
+              Tren pembuatan record <TrendingUp className="h-4 w-4" />
             </div>
             <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              Last 6 months data from your database
+              Berdasarkan created_at; bulan berjalan belum lengkap.
             </div>
           </div>
         </div>

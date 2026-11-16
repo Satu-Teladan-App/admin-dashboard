@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmedRow } from '@/src/lib/adminOperations';
+
 import { useState, useEffect } from "react";
 import { BreadcrumbLine } from "@/src/element/Breadcrumb";
 import DefaultLayout from "@/src/layout/DefaultLayout";
@@ -33,7 +35,6 @@ const FEATURE_TYPES = [
   { value: "alumni", label: "Alumni" },
   { value: "kegiatan", label: "Kegiatan" },
   { value: "komunitas", label: "Komunitas" },
-  { value: "donasi", label: "Pendanaan" },
   { value: "message", label: "Messages" },
 ];
 
@@ -151,7 +152,7 @@ export default function BlacklistPage() {
         },
       }));
 
-      setBlacklistData(enrichedData);
+      setBlacklistData(enrichedData.filter((item) => item.feature !== "donasi"));
     } catch (error) {
       console.error("Error fetching blacklist:", error);
       toast.error("Failed to fetch blacklist data");
@@ -166,12 +167,10 @@ export default function BlacklistPage() {
     }
 
     try {
-      const { error } = await supabase
+      await confirmedRow(supabase
         .from("user_feature_blacklist")
         .update({ is_active: false })
-        .eq("id", id);
-
-      if (error) throw error;
+        .eq("id", id).select('id').single());
 
       toast.success("User removed from blacklist successfully");
       fetchBlacklist();

@@ -1,4 +1,7 @@
 "use client";
+import { archiveContent, confirmedRow } from '@/src/lib/adminOperations';
+
+import { formatProfileIdentity } from '@/src/lib/profileIdentity';
 
 import { useState, useEffect } from "react";
 import {
@@ -110,7 +113,7 @@ export function PesanTable() {
         const { data: alumniDataResult, error: alumniError } = await supabase
           .from("alumni")
           .select(
-            "id, user_id, name, full_name, telephone, avatar, batch, graduation_year"
+            "id, user_id, name, full_name, telephone, avatar, batch, batch_status, graduation_year"
           )
           .in("id", Array.from(userIds));
 
@@ -169,25 +172,19 @@ export function PesanTable() {
   const handleDeleteMessage = async (messageId) => {
     if (
       !confirm(
-        "Are you sure you want to delete this message? This action cannot be undone."
+        "Arsipkan pesan ini? Pesan disembunyikan; laporan moderasi tetap disimpan."
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("messages")
-        .delete()
-        .eq("id", messageId);
-
-      if (error) throw error;
-
-      toast.success("Message deleted successfully");
+      await archiveContent(supabase, 'messages', messageId);
+      toast.success("Pesan diarsipkan");
       fetchMessages();
     } catch (error) {
       console.error("Error deleting message:", error);
-      toast.error("Failed to delete message");
+      toast.error(error.message);
     }
   };
 
@@ -199,16 +196,14 @@ export function PesanTable() {
 
     try {
       const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("user_feature_blacklist").insert({
+      await confirmedRow(supabase.from("user_feature_blacklist").insert({
         user_id: userToBlacklist.user_id,
         feature: "message",
         reason: blacklistReason,
         blacklisted_by: user?.user?.id,
         blacklisted_at: new Date().toISOString(),
         is_active: true,
-      });
-
-      if (error) throw error;
+      }).select('id').single());
 
       toast.success("User has been blacklisted from messaging features");
       setShowBlacklistDialog(false);
@@ -378,10 +373,7 @@ export function PesanTable() {
                             "Unknown User"}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {message.senderInfo?.batch &&
-                            `Batch ${message.senderInfo.batch}`}
-                          {message.senderInfo?.graduation_year &&
-                            ` • ${message.senderInfo.graduation_year}`}
+                          {formatProfileIdentity(message.senderInfo)}
                         </div>
                         <div className="text-xs text-gray-500">
                           ID: {message.senderInfo?.user_id || "No ID"}
@@ -401,10 +393,7 @@ export function PesanTable() {
                             "Unknown User"}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {message.receiverInfo?.batch &&
-                            `Batch ${message.receiverInfo.batch}`}
-                          {message.receiverInfo?.graduation_year &&
-                            ` • ${message.receiverInfo.graduation_year}`}
+                          {formatProfileIdentity(message.receiverInfo)}
                         </div>
                         <div className="text-xs text-gray-500">
                           ID: {message.receiverInfo?.user_id || "No ID"}
@@ -467,8 +456,7 @@ export function PesanTable() {
                                       "Unknown User"}
                                   </p>
                                   <p className="text-xs text-gray-500">
-                                    {selectedMessage.senderInfo?.batch &&
-                                      `Batch ${selectedMessage.senderInfo.batch}`}
+                                    {formatProfileIdentity(selectedMessage.senderInfo)}
                                     {selectedMessage.senderInfo
                                       ?.graduation_year &&
                                       ` • ${selectedMessage.senderInfo.graduation_year}`}
@@ -489,8 +477,7 @@ export function PesanTable() {
                                       "Unknown User"}
                                   </p>
                                   <p className="text-xs text-gray-500">
-                                    {selectedMessage.receiverInfo?.batch &&
-                                      `Batch ${selectedMessage.receiverInfo.batch}`}
+                                    {formatProfileIdentity(selectedMessage.receiverInfo)}
                                     {selectedMessage.receiverInfo
                                       ?.graduation_year &&
                                       ` • ${selectedMessage.receiverInfo.graduation_year}`}
@@ -561,7 +548,7 @@ export function PesanTable() {
                         </DialogContent>
                       </Dialog>
 
-                      <DropdownMenu>
+                        <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
                             <MoreHorizontal className="w-4 h-4" />
@@ -594,7 +581,7 @@ export function PesanTable() {
                             onClick={() => handleDeleteMessage(message.id)}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Message
+                              Arsipkan Pesan
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -626,9 +613,7 @@ export function PesanTable() {
                     "Unknown User"}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {userToBlacklist?.batch && `Batch ${userToBlacklist.batch}`}
-                  {userToBlacklist?.graduation_year &&
-                    ` • ${userToBlacklist.graduation_year}`}
+                  {formatProfileIdentity(userToBlacklist)}
                 </p>
                 <p className="text-xs text-gray-500">
                   ID: {userToBlacklist?.user_id || "No ID"}

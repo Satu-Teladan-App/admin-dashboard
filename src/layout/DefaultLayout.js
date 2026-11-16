@@ -4,7 +4,7 @@ export default function DefaultLayout({ className, children, ...props }) {
   return (
     <section
       className={cn(
-        "flex relative w-full bg-white pl-[10px] pr-[100px]",
+        "relative min-w-0 flex-1 bg-white px-4 sm:px-6",
         className
       )}
       {...props}

@@ -1,4 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import AdminInboxIndicator from '@/src/element/AdminInboxIndicator';
 
 export default function HeaderPage({ children }) {
   return (
@@ -6,6 +7,7 @@ export default function HeaderPage({ children }) {
       <SidebarTrigger className="-ml-1" />
       <div className="h-4 w-px bg-border" />
       <div className="flex flex-1 items-center gap-2 px-3">{children}</div>
+      <AdminInboxIndicator />
     </header>
   );
 }
